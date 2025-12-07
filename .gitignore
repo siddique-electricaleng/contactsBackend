@@ -1,6 +1,19 @@
 # Ignore environment variable files
 .env
+*.env
 
-# Ignore Go module
-./go.mod
-./go.sum
+# Ignore secret files
+generateSecret/
+
+# temporary build folders
+tmp/
+dist/
+bin/
+
+# OS/editor noise
+.DS_Store
+.vscode/
+.idea/
+
+# air live reload
+.air/

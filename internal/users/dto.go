@@ -13,8 +13,8 @@ type registerRequestDTO struct {
 }
 
 type loginRequestDTO struct {
-	EmailOrUsername string `json:"verify"`
-	Password        string `json:"password"`
+	Identifier string `json:"identifier"` //// can be either username or email
+	Password   string `json:"password"`
 }
 
 type tokensDTO struct {

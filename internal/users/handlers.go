@@ -54,6 +54,10 @@ func (h *handler) Login(w http.ResponseWriter, r *http.Request) {
 	// Send request body and receive access + refresh tokens
 	tokens, err := h.service.Login(r.Context(), dto.toCommand())
 	if err != nil {
+		if errors.Is(err, ErrEmailNotVerified) {
+			http.Error(w, "email not verified - please check your inbox", http.StatusForbidden)
+			return
+		}
 		if errors.Is(err, ErrInvalidCredentials) {
 			http.Error(w, "invalid credentials", http.StatusUnauthorized)
 			return
@@ -80,6 +84,10 @@ func (h *handler) Refresh(w http.ResponseWriter, r *http.Request) {
 
 	newTokens, err := h.service.RefreshTokens(r.Context(), body.RefreshToken)
 	if err != nil {
+		if errors.Is(err, ErrInvalidRefreshToken) {
+			http.Error(w, "invalid refresh token", http.StatusUnauthorized)
+			return
+		}
 		http.Error(w, "refresh failed", http.StatusUnauthorized)
 		return
 	}
@@ -116,12 +124,19 @@ func (h *handler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 
 	if token == "" {
-		http.Error(w, "missing token", http.StatusBadRequest)
+		http.Error(w, "missing email verification token", http.StatusBadRequest)
 		return
 	}
 
 	if err := h.service.VerifyEmail(r.Context(), token); err != nil {
-		http.Error(w, "invalid token", http.StatusBadRequest)
+		if errors.Is(err, ErrUsedVerifyToken) {
+			http.Error(w, "token already used verificaiton is complete, please log in instead", http.StatusConflict)
+			return
+		}
+		if errors.Is(err, ErrInvalidVerifyToken) {
+			http.Error(w, "expired email verification token", http.StatusBadRequest)
+		}
+		http.Error(w, "invalid email verification token", http.StatusBadRequest)
 		return
 	}
 
