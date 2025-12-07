@@ -1,6 +1,10 @@
 package users
 
-type RegisterRequest struct {
+/*
+	Internal Domain Model for Users Package
+*/
+
+type RegisterCommand struct {
 	Email        string `json:"email"`
 	Username     string `json:"username"`
 	Password     string `json:"password"`
@@ -8,12 +12,12 @@ type RegisterRequest struct {
 	MobileNumber string `json:"mobileNumber"`
 }
 
-type LoginRequest struct {
-	EmailOrUsername string `json:"emailOrUsername"`
+type LoginCommand struct {
+	EmailOrUsername string `json:"verify"`
 	Password        string `json:"password"`
 }
 
-type Tokens struct {
+type TokenPair struct {
 	AccessToken  string `json:"accessToken"`
 	RefreshToken string `json:"refreshToken"`
 }

@@ -2,7 +2,7 @@ package users
 
 import (
 	"contacts/internal/json"
-	"log"
+	"errors"
 	"net/http"
 )
 
@@ -16,40 +16,53 @@ func NewHandler(s Service) *handler {
 
 // ENDPOINT 1: POST /api/v1/auth/register
 func (h *handler) Register(w http.ResponseWriter, r *http.Request) {
-	var req RegisterRequest
+	var dto registerRequestDTO
 
 	// Marshall the json with error checking
-	if err := json.Read(r, &req); err != nil {
-		log.Println("register:", err)
+	if err := json.Read(r, &dto); err != nil {
+		http.Error(w, "invalid body", http.StatusBadRequest)
+		return
+	}
+
+	user, err := h.service.Register(r.Context(), dto.toCommand())
+	if err != nil {
+		if errors.Is(err, ErrConflict) {
+			http.Error(w, "eamil or username already exists", http.StatusConflict)
+			return
+		}
 		http.Error(w, "registration failed", http.StatusInternalServerError)
 		return
 	}
 
 	// Dummy map data
 	json.Write(w, http.StatusCreated, map[string]any{
-		"user":    "dummy-user-registered",
+		"user":    newUserDTO(user),
 		"message": "verification email will be sent",
 	})
 }
 
 // ENDPOINT 2: POST /api/v1/auth/login
 func (h *handler) Login(w http.ResponseWriter, r *http.Request) {
-	var req LoginRequest
+	var dto loginRequestDTO
 
 	// Marshall the json
-	if err := json.Read(r, &req); err != nil {
+	if err := json.Read(r, &dto); err != nil {
 		http.Error(w, "invalid body", http.StatusBadRequest)
 		return
 	}
 
 	// Send request body and receive access + refresh tokens
-	tokens, err := h.service.Login(r.Context(), req)
+	tokens, err := h.service.Login(r.Context(), dto.toCommand())
 	if err != nil {
-		http.Error(w, "invalid credentials", http.StatusUnauthorized)
+		if errors.Is(err, ErrInvalidCredentials) {
+			http.Error(w, "invalid credentials", http.StatusUnauthorized)
+			return
+		}
+		http.Error(w, "login failed", http.StatusInternalServerError)
 		return
 	}
 
-	json.Write(w, http.StatusOK, tokens)
+	json.Write(w, http.StatusOK, newTokensDTO(tokens))
 }
 
 // ENDPOINT 3: POST /api/v1/auth/refresh
@@ -72,7 +85,7 @@ func (h *handler) Refresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send the new Access Token with Refresh Token to frontend
-	json.Write(w, http.StatusOK, newTokens)
+	json.Write(w, http.StatusOK, newTokensDTO(newTokens))
 }
 
 // ENDPOINT 4: POST /api/v1/auth/logout

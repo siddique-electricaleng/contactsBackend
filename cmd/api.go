@@ -1,13 +1,16 @@
 package main
 
 import (
+	repo "contacts/internal/adapters/postgresql/sqlc"
 	"contacts/internal/users"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/jackc/pgx/v5"
 )
 
 // mount - create all the endpoints
@@ -24,7 +27,7 @@ func (app *application) mount() http.Handler {
 
 	// Routes
 
-	userService := users.NewService()
+	userService := users.NewService(repo.New(app.db))
 	userHandler := users.NewHandler(userService)
 
 	r.Route("/api/v1", func(r chi.Router) {
@@ -59,14 +62,26 @@ func (app *application) run(h http.Handler) error {
 
 type application struct {
 	config config
-	// db     *pgx.Conn
+	db     *pgx.Conn
 }
 
 type config struct {
 	addr string
-	// db   dbConfig
+	db   dbConfig
 }
 
-// type dbConfig struct {
-// 	dsn string
-// }
+type dbConfig struct {
+	host     string
+	port     string
+	user     string
+	password string
+	name     string
+	sslmode  string
+}
+
+func (c dbConfig) DSN() string {
+	return fmt.Sprintf(
+		"host=%s port=%s dbname=%s user=%s password=%s sslmode=%s",
+		c.host, c.port, c.name, c.user, c.password, c.sslmode,
+	)
+}

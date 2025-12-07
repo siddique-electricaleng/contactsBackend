@@ -1,33 +1,52 @@
 package main
 
 import (
+	"contacts/internal/env"
+	"context"
 	"log/slog"
 	"os"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	// ctx := context.Background()
+	ctx := context.Background()
+
+	godotenv.Load(".env")
 
 	cfg := config{
-		addr: ":8080",
+		addr: env.GetString("ADDR", ":8080"),
+		db: dbConfig{
+			host:     env.GetString("DB_HOST", "localhost"),
+			port:     env.GetString("DB_PORT", "5432"),
+			user:     env.GetString("DB_USER", "postgres"),
+			password: env.GetString("DB_PASSWORD", ""),
+			name:     env.GetString("DB_NAME", "products"),
+			sslmode:  env.GetString("DB_SSLMODE", "disable"),
+		},
 	}
+
+	dsn := cfg.db.DSN()
 
 	// structured logging
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
-	// DB Pooling
-	// conn, err := pgx.Connect(ctx, cfg.db.dsn)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// defer conn.Close(ctx)
+	logger.Info("Connecting to database")
 
-	// logger.Info("Connected to database", "dsn", cfg.db.dsn)
+	// DB Pooling
+	conn, err := pgx.Connect(ctx, dsn)
+	if err != nil {
+		panic(err)
+	}
+	defer conn.Close(ctx)
+
+	logger.Info("Connected to database")
 
 	api := application{
 		config: cfg,
-		// db:     conn,
+		db:     conn,
 	}
 
 	// Running the API
