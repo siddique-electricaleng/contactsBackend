@@ -1,2 +1,6 @@
 # Ignore environment variable files
 .env
+
+# Ignore Go module
+./go.mod
+./go.sum
