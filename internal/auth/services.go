@@ -1,4 +1,4 @@
-package users
+package auth
 
 import (
 	repo "contacts/internal/adapters/postgresql/sqlc"
@@ -245,7 +245,7 @@ func (s *svc) VerifyEmail(ctx context.Context, token string) error {
 		return ErrInvalidVerifyToken
 	}
 
-	// Mark in users table that email has been verified after registration
+	// Mark in auth table that email has been verified after registration
 	if err := s.repo.MarkUserEmailVerified(ctx, dbToken.UserID); err != nil {
 		return err
 	}

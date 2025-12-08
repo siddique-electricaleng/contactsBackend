@@ -1,4 +1,4 @@
-package users
+package auth
 
 import (
 	"contacts/internal/json"
@@ -22,7 +22,7 @@ func NewHandler(s Service) *handler {
 // @Accept       json
 // @Produce      json
 // @Param        input  body      registerRequestDTO  true  "register data"
-// @Success      201    {object}  users.RegisterResponseDoc
+// @Success      201    {object}  auth.RegisterResponseDoc
 // @Failure      400    {string}  string  "invalid body"
 // @Failure      409    {string}  string  "email or username already exists"
 // @Failure      500    {string}  string  "server error. registration failed"

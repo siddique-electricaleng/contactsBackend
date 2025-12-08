@@ -1,7 +1,7 @@
-package users
+package auth
 
 /*
-	Internal Domain Model for Users Package
+	Internal Domain Model for Auth Package
 */
 
 type RegisterCommand struct {

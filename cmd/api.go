@@ -2,8 +2,8 @@ package main
 
 import (
 	repo "contacts/internal/adapters/postgresql/sqlc"
+	"contacts/internal/auth"
 	conf "contacts/internal/config"
-	"contacts/internal/users"
 	"fmt"
 	"log"
 	"net/http"
@@ -29,8 +29,8 @@ func (app *application) mount() http.Handler {
 
 	// Routes
 
-	userService := users.NewService(repo.New(app.db))
-	userHandler := users.NewHandler(userService)
+	userService := auth.NewService(repo.New(app.db))
+	userHandler := auth.NewHandler(userService)
 
 	r.Route("/contacts/api/"+conf.APIVersion, func(r chi.Router) {
 

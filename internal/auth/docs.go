@@ -1,4 +1,4 @@
-package users
+package auth
 
 type RegisterResponseDoc struct {
 	Message string          `json:"message"`

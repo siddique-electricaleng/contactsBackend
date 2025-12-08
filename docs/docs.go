@@ -35,7 +35,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/users.loginRequestDTO"
+                            "$ref": "#/definitions/auth.loginRequestDTO"
                         }
                     }
                 ],
@@ -43,7 +43,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/users.TokenPair"
+                            "$ref": "#/definitions/auth.TokenPair"
                         }
                     },
                     "400": {
@@ -93,7 +93,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/users.refreshTokenRequestDTO"
+                            "$ref": "#/definitions/auth.refreshTokenRequestDTO"
                         }
                     }
                 ],
@@ -101,7 +101,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/users.LogoutResponse"
+                            "$ref": "#/definitions/auth.LogoutResponse"
                         }
                     },
                     "400": {
@@ -139,7 +139,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/users.refreshTokenRequestDTO"
+                            "$ref": "#/definitions/auth.refreshTokenRequestDTO"
                         }
                     }
                 ],
@@ -147,7 +147,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/users.tokensDTO"
+                            "$ref": "#/definitions/auth.tokensDTO"
                         }
                     },
                     "400": {
@@ -191,7 +191,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/users.registerRequestDTO"
+                            "$ref": "#/definitions/auth.registerRequestDTO"
                         }
                     }
                 ],
@@ -199,7 +199,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/users.RegisterResponseDoc"
+                            "$ref": "#/definitions/auth.RegisterResponseDoc"
                         }
                     },
                     "400": {
@@ -249,7 +249,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/users.VerifyEmailResponse"
+                            "$ref": "#/definitions/auth.VerifyEmailResponse"
                         }
                     },
                     "400": {
@@ -275,7 +275,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "users.LogoutResponse": {
+        "auth.LogoutResponse": {
             "type": "object",
             "properties": {
                 "message": {
@@ -283,29 +283,29 @@ const docTemplate = `{
                 }
             }
         },
-        "users.RegisterDataDoc": {
+        "auth.RegisterDataDoc": {
             "type": "object",
             "properties": {
                 "code": {
                     "type": "integer"
                 },
                 "user": {
-                    "$ref": "#/definitions/users.userResponseDTO"
+                    "$ref": "#/definitions/auth.userResponseDTO"
                 }
             }
         },
-        "users.RegisterResponseDoc": {
+        "auth.RegisterResponseDoc": {
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/users.RegisterDataDoc"
+                    "$ref": "#/definitions/auth.RegisterDataDoc"
                 },
                 "message": {
                     "type": "string"
                 }
             }
         },
-        "users.TokenPair": {
+        "auth.TokenPair": {
             "type": "object",
             "properties": {
                 "accessToken": {
@@ -316,7 +316,7 @@ const docTemplate = `{
                 }
             }
         },
-        "users.VerifyEmailResponse": {
+        "auth.VerifyEmailResponse": {
             "type": "object",
             "properties": {
                 "message": {
@@ -324,7 +324,7 @@ const docTemplate = `{
                 }
             }
         },
-        "users.loginRequestDTO": {
+        "auth.loginRequestDTO": {
             "type": "object",
             "properties": {
                 "identifier": {
@@ -336,7 +336,7 @@ const docTemplate = `{
                 }
             }
         },
-        "users.refreshTokenRequestDTO": {
+        "auth.refreshTokenRequestDTO": {
             "type": "object",
             "properties": {
                 "refreshToken": {
@@ -344,7 +344,7 @@ const docTemplate = `{
                 }
             }
         },
-        "users.registerRequestDTO": {
+        "auth.registerRequestDTO": {
             "type": "object",
             "properties": {
                 "email": {
@@ -361,7 +361,7 @@ const docTemplate = `{
                 }
             }
         },
-        "users.tokensDTO": {
+        "auth.tokensDTO": {
             "type": "object",
             "properties": {
                 "accessToken": {
@@ -372,7 +372,7 @@ const docTemplate = `{
                 }
             }
         },
-        "users.userResponseDTO": {
+        "auth.userResponseDTO": {
             "type": "object",
             "properties": {
                 "email": {

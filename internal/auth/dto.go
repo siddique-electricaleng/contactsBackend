@@ -1,7 +1,7 @@
-package users
+package auth
 
 /*
-	DTOs for reponses: Users Package
+	DTOs for reponses: Auth Package
 */
 
 type registerRequestDTO struct {

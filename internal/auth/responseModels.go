@@ -1,4 +1,4 @@
-package users
+package auth
 
 type RegisterResponse struct {
 	User    userResponseDTO `json:"user"`

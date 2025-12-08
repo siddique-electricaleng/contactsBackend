@@ -1,36 +1,36 @@
 definitions:
-  users.LogoutResponse:
+  auth.LogoutResponse:
     properties:
       message:
         type: string
     type: object
-  users.RegisterDataDoc:
+  auth.RegisterDataDoc:
     properties:
       code:
         type: integer
       user:
-        $ref: '#/definitions/users.userResponseDTO'
+        $ref: '#/definitions/auth.userResponseDTO'
     type: object
-  users.RegisterResponseDoc:
+  auth.RegisterResponseDoc:
     properties:
       data:
-        $ref: '#/definitions/users.RegisterDataDoc'
+        $ref: '#/definitions/auth.RegisterDataDoc'
       message:
         type: string
     type: object
-  users.TokenPair:
+  auth.TokenPair:
     properties:
       accessToken:
         type: string
       refreshToken:
         type: string
     type: object
-  users.VerifyEmailResponse:
+  auth.VerifyEmailResponse:
     properties:
       message:
         type: string
     type: object
-  users.loginRequestDTO:
+  auth.loginRequestDTO:
     properties:
       identifier:
         description: // can be either username or email
@@ -38,12 +38,12 @@ definitions:
       password:
         type: string
     type: object
-  users.refreshTokenRequestDTO:
+  auth.refreshTokenRequestDTO:
     properties:
       refreshToken:
         type: string
     type: object
-  users.registerRequestDTO:
+  auth.registerRequestDTO:
     properties:
       email:
         type: string
@@ -54,14 +54,14 @@ definitions:
       username:
         type: string
     type: object
-  users.tokensDTO:
+  auth.tokensDTO:
     properties:
       accessToken:
         type: string
       refreshToken:
         type: string
     type: object
-  users.userResponseDTO:
+  auth.userResponseDTO:
     properties:
       email:
         type: string
@@ -87,14 +87,14 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/users.loginRequestDTO'
+          $ref: '#/definitions/auth.loginRequestDTO'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/users.TokenPair'
+            $ref: '#/definitions/auth.TokenPair'
         "400":
           description: invalid body
           schema:
@@ -125,14 +125,14 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/users.refreshTokenRequestDTO'
+          $ref: '#/definitions/auth.refreshTokenRequestDTO'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/users.LogoutResponse'
+            $ref: '#/definitions/auth.LogoutResponse'
         "400":
           description: invalid body
           schema:
@@ -156,14 +156,14 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/users.refreshTokenRequestDTO'
+          $ref: '#/definitions/auth.refreshTokenRequestDTO'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/users.tokensDTO'
+            $ref: '#/definitions/auth.tokensDTO'
         "400":
           description: invalid body
           schema:
@@ -190,14 +190,14 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/users.registerRequestDTO'
+          $ref: '#/definitions/auth.registerRequestDTO'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/users.RegisterResponseDoc'
+            $ref: '#/definitions/auth.RegisterResponseDoc'
         "400":
           description: invalid body
           schema:
@@ -231,7 +231,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/users.VerifyEmailResponse'
+            $ref: '#/definitions/auth.VerifyEmailResponse'
         "400":
           description: missing, expired, or invalid email verification token
           schema:
