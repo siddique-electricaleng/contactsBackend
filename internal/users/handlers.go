@@ -2,6 +2,7 @@ package users
 
 import (
 	"contacts/internal/json"
+	"contacts/internal/transport"
 	"errors"
 	"net/http"
 )
@@ -14,7 +15,18 @@ func NewHandler(s Service) *handler {
 	return &handler{service: s}
 }
 
-// ENDPOINT 1: POST /api/v1/auth/register
+// // Register godoc
+// @Summary      Register new user
+// @Description  Create a new user account and send verification email
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        input  body      registerRequestDTO  true  "register data"
+// @Success      201    {object}  users.RegisterResponseDoc
+// @Failure      400    {string}  string  "invalid body"
+// @Failure      409    {string}  string  "email or username already exists"
+// @Failure      500    {string}  string  "server error. registration failed"
+// @Router       /auth/register [post]
 func (h *handler) Register(w http.ResponseWriter, r *http.Request) {
 	var dto registerRequestDTO
 
@@ -27,21 +39,39 @@ func (h *handler) Register(w http.ResponseWriter, r *http.Request) {
 	user, err := h.service.Register(r.Context(), dto.toCommand())
 	if err != nil {
 		if errors.Is(err, ErrConflict) {
-			http.Error(w, "eamil or username already exists", http.StatusConflict)
+			http.Error(w, "email or username already exists", http.StatusConflict)
 			return
 		}
-		http.Error(w, "registration failed", http.StatusInternalServerError)
+		http.Error(w, "server error. registration failed", http.StatusInternalServerError)
 		return
 	}
 
-	// Dummy map data
-	json.Write(w, http.StatusCreated, map[string]any{
-		"user":    newUserDTO(user),
-		"message": "verification email will be sent",
-	})
+	userResp := newUserDTO(user)
+
+	resp := transport.Envelope{
+		Message: "user registered successfully",
+		Data: map[string]interface{}{
+			"code": http.StatusCreated,
+			"user": userResp,
+		},
+	}
+
+	json.Write(w, http.StatusCreated, resp)
 }
 
-// ENDPOINT 2: POST /api/v1/auth/login
+// // Login godoc
+// @Summary      Login with validated user
+// @Description  Login with a validated user and generate then return the token pairs
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        input  body      loginRequestDTO  true  "login data"
+// @Success      200    {object}  TokenPair
+// @Failure      400    {string}  string  "invalid body"
+// @Failure      403    {string}  string  "email not verified - please check your inbox"
+// @Failure      401    {string}  string  "invalid credentials"
+// @Failure      500    {string}  string  "server error. login failed failed"
+// @Router       /auth/login [post]
 func (h *handler) Login(w http.ResponseWriter, r *http.Request) {
 	var dto loginRequestDTO
 
@@ -55,27 +85,45 @@ func (h *handler) Login(w http.ResponseWriter, r *http.Request) {
 	tokens, err := h.service.Login(r.Context(), dto.toCommand())
 	if err != nil {
 		if errors.Is(err, ErrEmailNotVerified) {
-			http.Error(w, "email not verified - please check your inbox", http.StatusForbidden)
+			http.Error(w, "email not verified", http.StatusForbidden)
 			return
 		}
 		if errors.Is(err, ErrInvalidCredentials) {
 			http.Error(w, "invalid credentials", http.StatusUnauthorized)
 			return
 		}
-		http.Error(w, "login failed", http.StatusInternalServerError)
+		http.Error(w, "server error. login failed", http.StatusInternalServerError)
 		return
 	}
 
-	json.Write(w, http.StatusOK, newTokensDTO(tokens))
+	tokenPairResp := newTokensDTO(tokens)
+	resp := transport.Envelope{
+		Message: "logged in successfully",
+		Data: map[string]interface{}{
+			"code": http.StatusOK,
+			"user": tokenPairResp,
+		},
+	}
+
+	json.Write(w, http.StatusOK, resp)
 }
 
-// ENDPOINT 3: POST /api/v1/auth/refresh
+// // Refresh godoc
+// @Summary      Generate new refresh token
+// @Description  If Refresh token is still valid, refresh the refresh token through this endpoint and regenerate token pairs
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        input  body      refreshTokenRequestDTO  true  "refresh token data"
+// @Success      200    {object}  tokensDTO
+// @Failure      400    {string}  string  "invalid body"
+// @Failure      401    {string}  string  "invalid refresh token"
+// @Failure      500    {string}  string  "server error. Refresh failed, please try again later"
+// @Router       /auth/refresh [post]
 func (h *handler) Refresh(w http.ResponseWriter, r *http.Request) {
 
 	// struct to hold refresh token
-	var body struct {
-		RefreshToken string `json:"refreshToken"`
-	}
+	var body refreshTokenRequestDTO
 
 	if err := json.Read(r, &body); err != nil || body.RefreshToken == "" {
 		http.Error(w, "invalid body", http.StatusBadRequest)
@@ -88,7 +136,7 @@ func (h *handler) Refresh(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "invalid refresh token", http.StatusUnauthorized)
 			return
 		}
-		http.Error(w, "refresh failed", http.StatusUnauthorized)
+		http.Error(w, "server error. Refresh failed, please try again later", http.StatusInternalServerError)
 		return
 	}
 
@@ -96,11 +144,19 @@ func (h *handler) Refresh(w http.ResponseWriter, r *http.Request) {
 	json.Write(w, http.StatusOK, newTokensDTO(newTokens))
 }
 
-// ENDPOINT 4: POST /api/v1/auth/logout
+// // Logout godoc
+// @Summary      logout
+// @Description  Revoke existing refresh token and logout
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        input  body      refreshTokenRequestDTO  true  "refresh token data"
+// @Success      200    {object}  LogoutResponse
+// @Failure      400    {string}  string  "invalid body"
+// @Failure      500    {string}  string  "server error. logout failed."
+// @Router       /auth/logout [post]
 func (h *handler) Logout(w http.ResponseWriter, r *http.Request) {
-	var body struct {
-		RefreshToken string `json:"refreshToken"`
-	}
+	var body refreshTokenRequestDTO
 
 	// Marshall JSON and give Bad Request error if body is invalid
 	if err := json.Read(r, &body); err != nil {
@@ -109,7 +165,7 @@ func (h *handler) Logout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.Logout(r.Context(), body.RefreshToken); err != nil {
-		http.Error(w, "logout failed", http.StatusBadRequest)
+		http.Error(w, "server error. logout failed", http.StatusInternalServerError)
 		return
 	}
 
@@ -119,7 +175,18 @@ func (h *handler) Logout(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// ENDPOINT 5: GET /api/v1/auth/verify?token=123
+// VerifyEmail godoc
+// @Summary     Email verification
+// @Description Verify user email using a one-time token valid for 5 minutes after registration.
+// @Tags        auth
+// @Accept      json
+// @Produce     json
+// @Param       token query string true "email verification token"
+// @Success     200 {object} VerifyEmailResponse
+// @Failure     400 {string} string "missing, expired, or invalid email verification token"
+// @Failure     409 {string} string "token already used; verification already completed"
+// @Failure     500 {string} string "server error"
+// @Router      /auth/verify-email [get]
 func (h *handler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 

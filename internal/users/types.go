@@ -5,11 +5,10 @@ package users
 */
 
 type RegisterCommand struct {
-	Email        string
-	Username     string
-	Password     string
-	Name         string
-	MobileNumber string
+	Email    string
+	Username string
+	Password string
+	Name     string
 }
 
 type LoginCommand struct {

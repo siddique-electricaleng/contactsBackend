@@ -1,0 +1,250 @@
+definitions:
+  users.LogoutResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  users.RegisterDataDoc:
+    properties:
+      code:
+        type: integer
+      user:
+        $ref: '#/definitions/users.userResponseDTO'
+    type: object
+  users.RegisterResponseDoc:
+    properties:
+      data:
+        $ref: '#/definitions/users.RegisterDataDoc'
+      message:
+        type: string
+    type: object
+  users.TokenPair:
+    properties:
+      accessToken:
+        type: string
+      refreshToken:
+        type: string
+    type: object
+  users.VerifyEmailResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  users.loginRequestDTO:
+    properties:
+      identifier:
+        description: // can be either username or email
+        type: string
+      password:
+        type: string
+    type: object
+  users.refreshTokenRequestDTO:
+    properties:
+      refreshToken:
+        type: string
+    type: object
+  users.registerRequestDTO:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  users.tokensDTO:
+    properties:
+      accessToken:
+        type: string
+      refreshToken:
+        type: string
+    type: object
+  users.userResponseDTO:
+    properties:
+      email:
+        type: string
+      id:
+        type: string
+      username:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: API Endpoint Documentation for Contacts Module
+  title: Contacts Backend API
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Login with a validated user and generate then return the token
+        pairs
+      parameters:
+      - description: login data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/users.loginRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/users.TokenPair'
+        "400":
+          description: invalid body
+          schema:
+            type: string
+        "401":
+          description: invalid credentials
+          schema:
+            type: string
+        "403":
+          description: email not verified - please check your inbox
+          schema:
+            type: string
+        "500":
+          description: server error. login failed failed
+          schema:
+            type: string
+      summary: Login with validated user
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Revoke existing refresh token and logout
+      parameters:
+      - description: refresh token data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/users.refreshTokenRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/users.LogoutResponse'
+        "400":
+          description: invalid body
+          schema:
+            type: string
+        "500":
+          description: server error. logout failed.
+          schema:
+            type: string
+      summary: logout
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: If Refresh token is still valid, refresh the refresh token through
+        this endpoint and regenerate token pairs
+      parameters:
+      - description: refresh token data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/users.refreshTokenRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/users.tokensDTO'
+        "400":
+          description: invalid body
+          schema:
+            type: string
+        "401":
+          description: invalid refresh token
+          schema:
+            type: string
+        "500":
+          description: server error. Refresh failed, please try again later
+          schema:
+            type: string
+      summary: Generate new refresh token
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account and send verification email
+      parameters:
+      - description: register data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/users.registerRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/users.RegisterResponseDoc'
+        "400":
+          description: invalid body
+          schema:
+            type: string
+        "409":
+          description: email or username already exists
+          schema:
+            type: string
+        "500":
+          description: server error. registration failed
+          schema:
+            type: string
+      summary: Register new user
+      tags:
+      - auth
+  /auth/verify-email:
+    get:
+      consumes:
+      - application/json
+      description: Verify user email using a one-time token valid for 5 minutes after
+        registration.
+      parameters:
+      - description: email verification token
+        in: query
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/users.VerifyEmailResponse'
+        "400":
+          description: missing, expired, or invalid email verification token
+          schema:
+            type: string
+        "409":
+          description: token already used; verification already completed
+          schema:
+            type: string
+        "500":
+          description: server error
+          schema:
+            type: string
+      summary: Email verification
+      tags:
+      - auth
+swagger: "2.0"

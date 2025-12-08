@@ -2,6 +2,7 @@ package main
 
 import (
 	repo "contacts/internal/adapters/postgresql/sqlc"
+	conf "contacts/internal/config"
 	"contacts/internal/users"
 	"fmt"
 	"log"
@@ -11,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 // mount - create all the endpoints
@@ -30,7 +32,7 @@ func (app *application) mount() http.Handler {
 	userService := users.NewService(repo.New(app.db))
 	userHandler := users.NewHandler(userService)
 
-	r.Route("/api/v1", func(r chi.Router) {
+	r.Route("/contacts/api/"+conf.APIVersion, func(r chi.Router) {
 
 		// ------------------ Auth Routes --------------------
 		r.Route("/auth", func(r chi.Router) {
@@ -40,8 +42,9 @@ func (app *application) mount() http.Handler {
 			r.Post("/logout", userHandler.Logout)
 			r.Get("/verify-email", userHandler.VerifyEmail)
 		})
+		// ------------------Swagger-------------------
+		r.Get("/docs/*", httpSwagger.WrapHandler)
 	})
-
 	return r
 }
 

@@ -5,11 +5,10 @@ package users
 */
 
 type registerRequestDTO struct {
-	Email        string `json:"email"`
-	Username     string `json:"username"`
-	Password     string `json:"password"`
-	Name         string `json:"name"`
-	MobileNumber string `json:"mobileNumber"` // optional
+	Email    string `json:"email"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Name     string `json:"name"`
 }
 
 type loginRequestDTO struct {
@@ -28,6 +27,10 @@ type userResponseDTO struct {
 	Username string `json:"username"`
 }
 
+type refreshTokenRequestDTO struct {
+	RefreshToken string `json:"refreshToken"`
+}
+
 func (d registerRequestDTO) toCommand() RegisterCommand {
 	return RegisterCommand(d)
 }
@@ -43,3 +46,5 @@ func newTokensDTO(t TokenPair) tokensDTO {
 func newUserDTO(u UserResponse) userResponseDTO {
 	return userResponseDTO(u)
 }
+
+// func dataDTO(dt any)

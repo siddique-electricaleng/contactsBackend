@@ -47,6 +47,7 @@ func (s *svc) Register(ctx context.Context, cmd RegisterCommand) (UserResponse, 
 		return UserResponse{}, nil
 	}
 
+	// Mandatory Fields for Registration
 	arg := repo.CreateUserParams{
 		Email:        cmd.Email,
 		Username:     cmd.Username,
@@ -79,16 +80,11 @@ func (s *svc) Register(ctx context.Context, cmd RegisterCommand) (UserResponse, 
 	}
 
 	// TASK0 Sending Email ---  Note by Saad: Please Check Again
-	/*
-		if err := SendVerificationEmail(user.Email, token); err != nil {
-			return UserResponse{}, err
-		}
-	*/
 
 	go SendEmailVerification(
 		cmd.Email,
 		"Verify your email",
-		fmt.Sprintf("Click here: %s/api/v1/auth/verify-email?token=%s", appBaseURL, token),
+		fmt.Sprintf("Click here to verify your registration to Contacts: %s%s?token=%s", appBaseURL, emaiLVerificationPath, token),
 	)
 	// Final return if everything went right
 	return UserResponse{
@@ -258,6 +254,5 @@ func (s *svc) VerifyEmail(ctx context.Context, token string) error {
 	if err := s.repo.MarkEmailVerificationTokenUsed(ctx, dbToken.ID); err != nil {
 		return err
 	}
-
 	return nil
 }

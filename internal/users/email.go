@@ -12,11 +12,12 @@ import (
 // generateEmailVerificationToken
 
 var (
-	smtpHost   = env.GetString("SMTP_HOST", "smtp.gmail.com")
-	smtpPort   = env.GetInt("SMTP_PORT", 587)
-	smtpUser   = env.GetString("SMTP_USERNAME", "")
-	smtpPass   = env.GetString("SMTP_PASSWORD", "")
-	appBaseURL = env.GetString("APP_BASE_URL", "http://localhost:8080")
+	smtpHost              = env.GetString("SMTP_HOST", "smtp.gmail.com")
+	smtpPort              = env.GetInt("SMTP_PORT", 587)
+	smtpUser              = env.GetString("SMTP_USERNAME", "")
+	smtpPass              = env.GetString("SMTP_PASSWORD", "")
+	appBaseURL            = env.GetString("APP_BASE_URL", "http://192.168.34.106:8080")
+	emaiLVerificationPath = env.GetString("EMAIL_API_ENDPOINT", "/contacts/api/v1/auth/verify-email")
 )
 
 func SendEmailVerification(to, subject, body string) error {
