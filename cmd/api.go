@@ -38,7 +38,7 @@ func (app *application) mount() http.Handler {
 			r.Post("/login", userHandler.Login)
 			r.Post("/refresh", userHandler.Refresh)
 			r.Post("/logout", userHandler.Logout)
-			r.Get("/verify", userHandler.VerifyEmail)
+			r.Get("/verify-email", userHandler.VerifyEmail)
 		})
 	})
 

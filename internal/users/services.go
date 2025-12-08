@@ -4,6 +4,7 @@ import (
 	repo "contacts/internal/adapters/postgresql/sqlc"
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -78,10 +79,17 @@ func (s *svc) Register(ctx context.Context, cmd RegisterCommand) (UserResponse, 
 	}
 
 	// TASK0 Sending Email ---  Note by Saad: Please Check Again
-	if err := sendVerificationEmail(user.Email, token); err != nil {
-		return UserResponse{}, err
-	}
+	/*
+		if err := SendVerificationEmail(user.Email, token); err != nil {
+			return UserResponse{}, err
+		}
+	*/
 
+	go SendEmailVerification(
+		cmd.Email,
+		"Verify your email",
+		fmt.Sprintf("Click here: %s/api/v1/auth/verify-email?token=%s", appBaseURL, token),
+	)
 	// Final return if everything went right
 	return UserResponse{
 		ID:       user.ID.String(),

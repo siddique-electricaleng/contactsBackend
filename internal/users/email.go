@@ -2,8 +2,11 @@ package users
 
 import (
 	"contacts/internal/env"
+	"crypto/tls"
 	"fmt"
+	"net"
 	"net/smtp"
+	"os"
 )
 
 // generateEmailVerificationToken
@@ -16,27 +19,63 @@ var (
 	appBaseURL = env.GetString("APP_BASE_URL", "http://localhost:8080")
 )
 
-func sendVerificationEmail(toEmail, token string) error {
-	if smtpUser == "" || smtpPass == "" {
-		return nil
+func SendEmailVerification(to, subject, body string) error {
+	host := os.Getenv("SMTP_HOST") // smtp.gmail.com
+	port := os.Getenv("SMTP_PORT") // 587
+	username := os.Getenv("SMTP_USERNAME")
+	password := os.Getenv("SMTP_PASSWORD")
+
+	// addr := fmt.Sprintf("%s:%s", host, port)
+	addr := net.JoinHostPort(host, port)
+
+	// 1. Connect to SMTP server
+	conn, err := net.Dial("tcp", addr)
+	if err != nil {
+		return err
 	}
 
-	link := fmt.Sprintf("%s/api/v1/auth/verify?token=%s", appBaseURL, token)
+	// 2. Upgrade to TLS — STARTTLS
+	tlsConfig := &tls.Config{
+		ServerName: host,
+	}
 
-	subject := "Verify your email"
-	body := fmt.Sprintf(
-		"Hi, \r\n\r\nPlease verify your email by clicking the link below:\r\n%s\r\n If you didn't sign up, ignore this.\r\n",
-		link,
-	)
+	client, err := smtp.NewClient(conn, host)
+	if err != nil {
+		return err
+	}
 
-	// RFC 5322 email format (Subject + blank line + body)
-	msg := []byte("Subject: " + subject + "\r\n" +
-		"To: " + toEmail + "\r\n" +
-		"\r\n" +
-		body)
+	if ok, _ := client.Extension("STARTTLS"); ok {
+		if err = client.StartTLS(tlsConfig); err != nil {
+			return err
+		}
+	}
 
-	addr := fmt.Sprintf("%s:%d", smtpHost, smtpPort)
-	auth := smtp.PlainAuth("", smtpUser, smtpPass, smtpHost)
+	// 3. Authentication
+	auth := smtp.PlainAuth("", username, password, host)
+	if err = client.Auth(auth); err != nil {
+		return err
+	}
 
-	return smtp.SendMail(addr, auth, smtpUser, []string{toEmail}, msg)
+	// 4. Set the sender and receiver
+	if err = client.Mail(username); err != nil {
+		return err
+	}
+	if err = client.Rcpt(to); err != nil {
+		return err
+	}
+
+	// 5. Write email body
+	wc, err := client.Data()
+	if err != nil {
+		return err
+	}
+	defer wc.Close()
+
+	message := fmt.Sprintf("Subject: %s\r\n\r\n%s", subject, body)
+	_, err = wc.Write([]byte(message))
+	if err != nil {
+		return err
+	}
+
+	return client.Quit()
 }
