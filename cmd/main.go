@@ -11,8 +11,6 @@ import (
 	"log/slog"
 	"os"
 
-	_ "contacts/docs" // <- module path + /docs
-
 	"github.com/jackc/pgx/v5"
 	"github.com/joho/godotenv"
 )
@@ -22,7 +20,7 @@ func main() {
 
 	godotenv.Load(".env")
 
-	baseURLPath := env.GetString("API_BASE_URL", "/contacts/api/") + conf.APIVersion
+	baseURLPath := env.GetString("API_BASE_URL", "/api/") + conf.APIVersion
 	// Override API version in Swagger documentation - dynamic API version management
 	docs.SwaggerInfo.Version = conf.APIVersion // swagger API version
 	docs.SwaggerInfo.BasePath = baseURLPath    // swagger API Base Path

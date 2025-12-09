@@ -3,7 +3,13 @@ package env
 import (
 	"os"
 	"strconv"
+
+	"github.com/joho/godotenv"
 )
+
+func init() {
+	_ = godotenv.Load(".env")
+}
 
 func GetString(key, fallback string) string {
 	if val := os.Getenv(key); val != "" {

@@ -8,6 +8,43 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Contact struct {
+	ID          pgtype.UUID        `json:"id"`
+	UserID      pgtype.UUID        `json:"user_id"`
+	DisplayName string             `json:"display_name"`
+	FirstName   pgtype.Text        `json:"first_name"`
+	Surname     pgtype.Text        `json:"surname"`
+	Note        pgtype.Text        `json:"note"`
+	Source      string             `json:"source"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
+}
+
+type ContactEmail struct {
+	ID              int64              `json:"id"`
+	UserID          pgtype.UUID        `json:"user_id"`
+	ContactID       pgtype.UUID        `json:"contact_id"`
+	Label           pgtype.Text        `json:"label"`
+	Email           string             `json:"email"`
+	NormalizedEmail string             `json:"normalized_email"`
+	IsPrimary       bool               `json:"is_primary"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
+type ContactPhoneNumber struct {
+	ID               int64              `json:"id"`
+	UserID           pgtype.UUID        `json:"user_id"`
+	ContactID        pgtype.UUID        `json:"contact_id"`
+	Label            pgtype.Text        `json:"label"`
+	Number           string             `json:"number"`
+	NormalizedNumber string             `json:"normalized_number"`
+	IsPrimary        bool               `json:"is_primary"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+}
+
 type EmailVerificationToken struct {
 	ID        pgtype.UUID        `json:"id"`
 	UserID    pgtype.UUID        `json:"user_id"`

@@ -14,4 +14,5 @@
  * 
  * This module handles backend operations for the contacts management system
  * within the Pico Cloud platform.
+ * Architecture: Modular Monolith with Clean Architecture Boundaries
  */

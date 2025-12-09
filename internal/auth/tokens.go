@@ -5,6 +5,7 @@ package auth
 */
 
 import (
+	conf "contacts/internal/config"
 	"contacts/internal/env"
 	"crypto/rand"
 	"crypto/sha256"
@@ -15,7 +16,7 @@ import (
 )
 
 var (
-	jwtSecret            = []byte(env.GetStringNoFallback("JWT_SECRET"))
+	jwtSecret            = conf.JWT_SECRET
 	accessTokenTTL       = time.Duration(env.GetInt("ACCESS_TOKEN_TTL", 15)) * time.Minute
 	refreshTokenTTL      = time.Duration(env.GetInt("REFRESH_TOKEN_TTL", 30)) * time.Hour * 24
 	emailVerificationTTL = time.Duration(env.GetInt("EMAIL_TOKEN_EXPIRE_MINUTES", 5)) * time.Minute

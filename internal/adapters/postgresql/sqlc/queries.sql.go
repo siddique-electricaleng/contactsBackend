@@ -11,6 +11,58 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createContact = `-- name: CreateContact :one
+
+
+INSERT INTO contacts (
+    user_id,
+    display_name,
+    first_name,
+    surname,
+    note,
+    source
+) VALUES (
+    $1, $2, $3, $4, $5, $6
+)
+RETURNING id, user_id, display_name, first_name, surname, note, source, created_at, updated_at, deleted_at
+`
+
+type CreateContactParams struct {
+	UserID      pgtype.UUID `json:"user_id"`
+	DisplayName string      `json:"display_name"`
+	FirstName   pgtype.Text `json:"first_name"`
+	Surname     pgtype.Text `json:"surname"`
+	Note        pgtype.Text `json:"note"`
+	Source      string      `json:"source"`
+}
+
+// SQLC queries for contact management : contacts domain
+// POST /contacts
+func (q *Queries) CreateContact(ctx context.Context, arg CreateContactParams) (Contact, error) {
+	row := q.db.QueryRow(ctx, createContact,
+		arg.UserID,
+		arg.DisplayName,
+		arg.FirstName,
+		arg.Surname,
+		arg.Note,
+		arg.Source,
+	)
+	var i Contact
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.DisplayName,
+		&i.FirstName,
+		&i.Surname,
+		&i.Note,
+		&i.Source,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
 const createEmailVerificationToken = `-- name: CreateEmailVerificationToken :one
 
 INSERT INTO email_verification_tokens (
@@ -97,7 +149,7 @@ type CreateUserParams struct {
 	Name         string `json:"name"`
 }
 
-// SQLC queries for user management
+// SQLC queries for user management : auth domain
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	row := q.db.QueryRow(ctx, createUser,
 		arg.Email,
@@ -136,6 +188,39 @@ WHERE id = $1
 func (q *Queries) DeleteEmailVerificationToken(ctx context.Context, id pgtype.UUID) error {
 	_, err := q.db.Exec(ctx, deleteEmailVerificationToken, id)
 	return err
+}
+
+const getContactByID = `-- name: GetContactByID :one
+
+SELECT id, user_id, display_name, first_name, surname, note, source, created_at, updated_at, deleted_at
+FROM contacts
+WHERE id = $1
+  AND user_id = $2
+  AND deleted_at IS NULL
+`
+
+type GetContactByIDParams struct {
+	ID     pgtype.UUID `json:"id"`
+	UserID pgtype.UUID `json:"user_id"`
+}
+
+// GET /contacts/{id}
+func (q *Queries) GetContactByID(ctx context.Context, arg GetContactByIDParams) (Contact, error) {
+	row := q.db.QueryRow(ctx, getContactByID, arg.ID, arg.UserID)
+	var i Contact
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.DisplayName,
+		&i.FirstName,
+		&i.Surname,
+		&i.Note,
+		&i.Source,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
 }
 
 const getEmailVerificationToken = `-- name: GetEmailVerificationToken :one
@@ -279,6 +364,126 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 	return i, err
 }
 
+const listContactsForUser = `-- name: ListContactsForUser :many
+
+SELECT id, user_id, display_name, first_name, surname, note, source, created_at, updated_at, deleted_at
+FROM contacts
+WHERE user_id = $1
+  AND deleted_at IS NULL
+ORDER BY display_name ASC
+LIMIT $2 OFFSET $3
+`
+
+type ListContactsForUserParams struct {
+	UserID pgtype.UUID `json:"user_id"`
+	Limit  int32       `json:"limit"`
+	Offset int32       `json:"offset"`
+}
+
+// GET /contacts?limit=&offset=
+func (q *Queries) ListContactsForUser(ctx context.Context, arg ListContactsForUserParams) ([]Contact, error) {
+	rows, err := q.db.Query(ctx, listContactsForUser, arg.UserID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Contact
+	for rows.Next() {
+		var i Contact
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.DisplayName,
+			&i.FirstName,
+			&i.Surname,
+			&i.Note,
+			&i.Source,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listEmailsForContact = `-- name: ListEmailsForContact :many
+SELECT id, user_id, contact_id, label, email, normalized_email, is_primary, created_at, updated_at
+FROM contact_emails
+WHERE contact_id = $1
+`
+
+func (q *Queries) ListEmailsForContact(ctx context.Context, contactID pgtype.UUID) ([]ContactEmail, error) {
+	rows, err := q.db.Query(ctx, listEmailsForContact, contactID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ContactEmail
+	for rows.Next() {
+		var i ContactEmail
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.ContactID,
+			&i.Label,
+			&i.Email,
+			&i.NormalizedEmail,
+			&i.IsPrimary,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPhonesForContact = `-- name: ListPhonesForContact :many
+SELECT id, user_id, contact_id, label, number, normalized_number, is_primary, created_at, updated_at
+FROM contact_phone_numbers
+WHERE contact_id = $1
+`
+
+func (q *Queries) ListPhonesForContact(ctx context.Context, contactID pgtype.UUID) ([]ContactPhoneNumber, error) {
+	rows, err := q.db.Query(ctx, listPhonesForContact, contactID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ContactPhoneNumber
+	for rows.Next() {
+		var i ContactPhoneNumber
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.ContactID,
+			&i.Label,
+			&i.Number,
+			&i.NormalizedNumber,
+			&i.IsPrimary,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const markEmailVerificationTokenUsed = `-- name: MarkEmailVerificationTokenUsed :exec
 UPDATE email_verification_tokens
 SET used_at = now()
@@ -324,4 +529,75 @@ WHERE id = $1
 func (q *Queries) RevokeRefreshToken(ctx context.Context, id pgtype.UUID) error {
 	_, err := q.db.Exec(ctx, revokeRefreshToken, id)
 	return err
+}
+
+const upsertContactEmail = `-- name: UpsertContactEmail :one
+INSERT INTO contact_emails(
+  contact_id,
+  email,
+  label
+)
+VALUES( $1, $2, $3
+) ON CONFLICT (contact_id, normalized_email) DO UPDATE
+SET label = EXCLUDED.label
+RETURNING id, user_id, contact_id, label, email, normalized_email, is_primary, created_at, updated_at
+`
+
+type UpsertContactEmailParams struct {
+	ContactID pgtype.UUID `json:"contact_id"`
+	Email     string      `json:"email"`
+	Label     pgtype.Text `json:"label"`
+}
+
+func (q *Queries) UpsertContactEmail(ctx context.Context, arg UpsertContactEmailParams) (ContactEmail, error) {
+	row := q.db.QueryRow(ctx, upsertContactEmail, arg.ContactID, arg.Email, arg.Label)
+	var i ContactEmail
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.ContactID,
+		&i.Label,
+		&i.Email,
+		&i.NormalizedEmail,
+		&i.IsPrimary,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const upsertContactPhone = `-- name: UpsertContactPhone :one
+INSERT INTO contact_phone_numbers(
+  contact_id,
+  number,
+  label
+)
+VALUES( $1, $2, $3
+)
+ON CONFLICT (contact_id, normalized_number) DO UPDATE
+SET label = EXCLUDED.label
+RETURNING id, user_id, contact_id, label, number, normalized_number, is_primary, created_at, updated_at
+`
+
+type UpsertContactPhoneParams struct {
+	ContactID pgtype.UUID `json:"contact_id"`
+	Number    string      `json:"number"`
+	Label     pgtype.Text `json:"label"`
+}
+
+func (q *Queries) UpsertContactPhone(ctx context.Context, arg UpsertContactPhoneParams) (ContactPhoneNumber, error) {
+	row := q.db.QueryRow(ctx, upsertContactPhone, arg.ContactID, arg.Number, arg.Label)
+	var i ContactPhoneNumber
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.ContactID,
+		&i.Label,
+		&i.Number,
+		&i.NormalizedNumber,
+		&i.IsPrimary,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }

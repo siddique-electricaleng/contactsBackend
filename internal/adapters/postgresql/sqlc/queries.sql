@@ -1,12 +1,12 @@
--- SQLC queries for user management
+-- SQLC queries for user management : auth domain
 -- name: CreateUser :one
 INSERT INTO users (
     email,
     username,
     password_hash,
-    name,
+    name
 ) VALUES (
-    $1, $2, $3, $4, $5
+    $1, $2, $3, $4
 )
 RETURNING *;
 
@@ -92,3 +92,75 @@ UPDATE refresh_tokens
 SET revoked_at = now()
 WHERE user_id = $1
   AND revoked_at IS NULL;
+
+-- SQLC queries for contact management : contacts domain
+
+-- POST /contacts
+
+-- name: CreateContact :one
+INSERT INTO contacts (
+    user_id,
+    display_name,
+    first_name,
+    surname,
+    note,
+    source
+) VALUES (
+    $1, $2, $3, $4, $5, $6
+)
+RETURNING *;
+
+-- name: UpsertContactPhone :one
+INSERT INTO contact_phone_numbers(
+  contact_id,
+  number,
+  label
+)
+VALUES( $1, $2, $3
+)
+ON CONFLICT (contact_id, normalized_number) DO UPDATE
+SET label = EXCLUDED.label
+RETURNING *
+;
+
+-- name: UpsertContactEmail :one
+INSERT INTO contact_emails(
+  contact_id,
+  email,
+  label
+)
+VALUES( $1, $2, $3
+) ON CONFLICT (contact_id, normalized_email) DO UPDATE
+SET label = EXCLUDED.label
+RETURNING *
+;
+
+-- GET /contacts?limit=&offset=
+
+-- name: ListContactsForUser :many
+SELECT *
+FROM contacts
+WHERE user_id = $1
+  AND deleted_at IS NULL
+ORDER BY display_name ASC
+LIMIT $2 OFFSET $3;
+
+-- GET /contacts/{id}
+
+-- name: GetContactByID :one
+SELECT *
+FROM contacts
+WHERE id = $1
+  AND user_id = $2
+  AND deleted_at IS NULL
+;
+
+-- name: ListPhonesForContact :many
+SELECT *
+FROM contact_phone_numbers
+WHERE contact_id = $1;
+
+-- name: ListEmailsForContact :many
+SELECT *
+FROM contact_emails
+WHERE contact_id = $1;

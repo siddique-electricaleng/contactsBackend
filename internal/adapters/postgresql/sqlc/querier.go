@@ -11,22 +11,33 @@ import (
 )
 
 type Querier interface {
+	// SQLC queries for contact management : contacts domain
+	// POST /contacts
+	CreateContact(ctx context.Context, arg CreateContactParams) (Contact, error)
 	// SQLC queries for email verification tokens
 	CreateEmailVerificationToken(ctx context.Context, arg CreateEmailVerificationTokenParams) (EmailVerificationToken, error)
 	// SQLC queries for refresh tokens
 	CreateRefreshToken(ctx context.Context, arg CreateRefreshTokenParams) (RefreshToken, error)
-	// SQLC queries for user management
+	// SQLC queries for user management : auth domain
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteEmailVerificationToken(ctx context.Context, id pgtype.UUID) error
+	// GET /contacts/{id}
+	GetContactByID(ctx context.Context, arg GetContactByIDParams) (Contact, error)
 	GetEmailVerificationToken(ctx context.Context, token string) (EmailVerificationToken, error)
 	GetRefreshTokenByHash(ctx context.Context, tokenHash string) (RefreshToken, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByEmailOrUsername(ctx context.Context, email string) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
+	// GET /contacts?limit=&offset=
+	ListContactsForUser(ctx context.Context, arg ListContactsForUserParams) ([]Contact, error)
+	ListEmailsForContact(ctx context.Context, contactID pgtype.UUID) ([]ContactEmail, error)
+	ListPhonesForContact(ctx context.Context, contactID pgtype.UUID) ([]ContactPhoneNumber, error)
 	MarkEmailVerificationTokenUsed(ctx context.Context, id pgtype.UUID) error
 	MarkUserEmailVerified(ctx context.Context, id pgtype.UUID) error
 	RevokeAllUserRefreshTokens(ctx context.Context, userID pgtype.UUID) error
 	RevokeRefreshToken(ctx context.Context, id pgtype.UUID) error
+	UpsertContactEmail(ctx context.Context, arg UpsertContactEmailParams) (ContactEmail, error)
+	UpsertContactPhone(ctx context.Context, arg UpsertContactPhoneParams) (ContactPhoneNumber, error)
 }
 
 var _ Querier = (*Queries)(nil)

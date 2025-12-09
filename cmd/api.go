@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
@@ -21,20 +21,24 @@ func (app *application) mount() http.Handler {
 	r := chi.NewRouter()
 
 	// A good base middleware stack
-	r.Use(middleware.RequestID) // important for rate limiting - avoids DDOS
-	r.Use(middleware.RealIP)    // import for rate limiting and analytics and tracing
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)                 // recover from crashes
-	r.Use(middleware.Timeout(60 * time.Second)) // 60 second timeout
+	r.Use(chiMiddleware.RequestID) // important for rate limiting - avoids DDOS
+	r.Use(chiMiddleware.RealIP)    // import for rate limiting and analytics and tracing
+	r.Use(chiMiddleware.Logger)
+	r.Use(chiMiddleware.Recoverer)                 // recover from crashes
+	r.Use(chiMiddleware.Timeout(60 * time.Second)) // 60 second timeout
 
 	// Routes
 
 	userService := auth.NewService(repo.New(app.db))
 	userHandler := auth.NewHandler(userService)
 
-	r.Route("/contacts/api/"+conf.APIVersion, func(r chi.Router) {
+	// r.Route("/contacts/api/"+conf.APIVersion, func(r chi.Router) {
+	r.Route("/api/"+conf.APIVersion, func(r chi.Router) {
+
+		// ---------------------------- PUBLIC ROUTES ------------------------
 
 		// ------------------ Auth Routes --------------------
+
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/register", userHandler.Register)
 			r.Post("/login", userHandler.Login)
@@ -42,8 +46,23 @@ func (app *application) mount() http.Handler {
 			r.Post("/logout", userHandler.Logout)
 			r.Get("/verify-email", userHandler.VerifyEmail)
 		})
+
 		// ------------------Swagger-------------------
+
 		r.Get("/docs/*", httpSwagger.WrapHandler)
+
+		// ------------------Protected Routes----------
+
+		// profileHandler := auth.NewProfileHandler(profileService)
+		/*
+			r.Group(func(r chi.Router) {
+				r.Use(appMiddleware.Auth([]byte(conf.JWT_SECRET)))
+				// --------------ALL PROTECTED ROUTES BELOW HERE ----------------
+
+				// User DProfile Routes
+				r.Get("/profile", profileHandler.Profile)
+			})
+		*/
 	})
 	return r
 }
