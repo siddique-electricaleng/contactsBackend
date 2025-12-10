@@ -4,23 +4,29 @@ package contacts
 // It matches child table contact_phone_numbers (numbers+label).
 
 type PhoneDTO struct {
-	Label     string `json:"label"`     // contact_phone_numbers.label
-	Number    string `json:"number"`    // contact_phone_numbers.number
-	IsPrimary bool   `json:"isPrimary"` // contact_phone_numbers.is_primary
+	UserID           string `json:"user_id,omitempty"`           // contact_phone_numbers.user_id
+	ContactID        string `json:"contact_id,omitempty"`        // contact_phone_numbers.contact_id
+	Label            string `json:"label"`                       // contact_phone_numbers.label
+	Number           string `json:"number"`                      // contact_phone_numbers.number
+	NormalizedNumber string `json:"normalized_number,omitempty"` // contact_phone_numbers.normalized_number
+	IsPrimary        bool   `json:"is_primary"`                  // contact_phone_numbers.is_primary
 }
 
 // EmailDTO matches contact_emails (emails+label).
 type EmailDTO struct {
-	Label     string `json:"label"`     // contact_phone_numbers.label
-	Email     string `json:"email"`     // contact_phone_numbers.email
-	IsPrimary bool   `json:"isPrimary"` // contact_emails.is_primary
+	UserID          string `json:"user_id"`          // contact_emails.user_id
+	ContactID       string `json:"contact_id"`       // contact_emails.contact_id
+	Label           string `json:"label"`            // contact_emails.label
+	Email           string `json:"email"`            // contact_emails.email
+	NormalizedEmail string `json:"normalized_email"` // contact_emails.normalized_email
+	IsPrimary       bool   `json:"is_primary"`       // contact_emails.is_primary
 }
 
 // CreateContactRequest is what the frontend sends to POST /contacts
 // Fields map 1:1 to columns in the contacts table + child table collections
 type CreateContactRequest struct {
-	DisplayName string     `json:"displayName"`      // contacts.display_name
-	FirstName   string     `json:"firstName"`        // contacts.first_name
+	DisplayName string     `json:"display_name"`     // contacts.display_name
+	FirstName   string     `json:"first_name"`       // contacts.first_name
 	Surname     string     `json:"surname"`          // contacts.surname
 	Note        string     `json:"note,omitempty"`   // contacts.note (optional)
 	Source      string     `json:"source"`           // contacts.source

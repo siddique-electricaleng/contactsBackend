@@ -112,11 +112,14 @@ RETURNING *;
 
 -- name: UpsertContactPhone :one
 INSERT INTO contact_phone_numbers(
+  user_id,
   contact_id,
   number,
-  label
+  label,
+  normalized_number,
+  is_primary
 )
-VALUES( $1, $2, $3
+VALUES( $1, $2, $3, $4, $5, $6
 )
 ON CONFLICT (contact_id, normalized_number) DO UPDATE
 SET label = EXCLUDED.label
@@ -125,11 +128,14 @@ RETURNING *
 
 -- name: UpsertContactEmail :one
 INSERT INTO contact_emails(
+  user_id,
   contact_id,
   email,
-  label
+  label,
+  normalized_email,
+  is_primary
 )
-VALUES( $1, $2, $3
+VALUES( $1, $2, $3, $4, $5, $6
 ) ON CONFLICT (contact_id, normalized_email) DO UPDATE
 SET label = EXCLUDED.label
 RETURNING *

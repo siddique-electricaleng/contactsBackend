@@ -533,24 +533,37 @@ func (q *Queries) RevokeRefreshToken(ctx context.Context, id pgtype.UUID) error 
 
 const upsertContactEmail = `-- name: UpsertContactEmail :one
 INSERT INTO contact_emails(
+  user_id,
   contact_id,
   email,
-  label
+  label,
+  normalized_email,
+  is_primary
 )
-VALUES( $1, $2, $3
+VALUES( $1, $2, $3, $4, $5, $6
 ) ON CONFLICT (contact_id, normalized_email) DO UPDATE
 SET label = EXCLUDED.label
 RETURNING id, user_id, contact_id, label, email, normalized_email, is_primary, created_at, updated_at
 `
 
 type UpsertContactEmailParams struct {
-	ContactID pgtype.UUID `json:"contact_id"`
-	Email     string      `json:"email"`
-	Label     pgtype.Text `json:"label"`
+	UserID          pgtype.UUID `json:"user_id"`
+	ContactID       pgtype.UUID `json:"contact_id"`
+	Email           string      `json:"email"`
+	Label           pgtype.Text `json:"label"`
+	NormalizedEmail string      `json:"normalized_email"`
+	IsPrimary       bool        `json:"is_primary"`
 }
 
 func (q *Queries) UpsertContactEmail(ctx context.Context, arg UpsertContactEmailParams) (ContactEmail, error) {
-	row := q.db.QueryRow(ctx, upsertContactEmail, arg.ContactID, arg.Email, arg.Label)
+	row := q.db.QueryRow(ctx, upsertContactEmail,
+		arg.UserID,
+		arg.ContactID,
+		arg.Email,
+		arg.Label,
+		arg.NormalizedEmail,
+		arg.IsPrimary,
+	)
 	var i ContactEmail
 	err := row.Scan(
 		&i.ID,
@@ -568,11 +581,14 @@ func (q *Queries) UpsertContactEmail(ctx context.Context, arg UpsertContactEmail
 
 const upsertContactPhone = `-- name: UpsertContactPhone :one
 INSERT INTO contact_phone_numbers(
+  user_id,
   contact_id,
   number,
-  label
+  label,
+  normalized_number,
+  is_primary
 )
-VALUES( $1, $2, $3
+VALUES( $1, $2, $3, $4, $5, $6
 )
 ON CONFLICT (contact_id, normalized_number) DO UPDATE
 SET label = EXCLUDED.label
@@ -580,13 +596,23 @@ RETURNING id, user_id, contact_id, label, number, normalized_number, is_primary,
 `
 
 type UpsertContactPhoneParams struct {
-	ContactID pgtype.UUID `json:"contact_id"`
-	Number    string      `json:"number"`
-	Label     pgtype.Text `json:"label"`
+	UserID           pgtype.UUID `json:"user_id"`
+	ContactID        pgtype.UUID `json:"contact_id"`
+	Number           string      `json:"number"`
+	Label            pgtype.Text `json:"label"`
+	NormalizedNumber string      `json:"normalized_number"`
+	IsPrimary        bool        `json:"is_primary"`
 }
 
 func (q *Queries) UpsertContactPhone(ctx context.Context, arg UpsertContactPhoneParams) (ContactPhoneNumber, error) {
-	row := q.db.QueryRow(ctx, upsertContactPhone, arg.ContactID, arg.Number, arg.Label)
+	row := q.db.QueryRow(ctx, upsertContactPhone,
+		arg.UserID,
+		arg.ContactID,
+		arg.Number,
+		arg.Label,
+		arg.NormalizedNumber,
+		arg.IsPrimary,
+	)
 	var i ContactPhoneNumber
 	err := row.Scan(
 		&i.ID,

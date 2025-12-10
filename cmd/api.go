@@ -4,6 +4,8 @@ import (
 	repo "contacts/internal/adapters/postgresql/sqlc"
 	"contacts/internal/auth"
 	conf "contacts/internal/config"
+	"contacts/internal/contacts"
+	appMiddleware "contacts/internal/middleware"
 	"fmt"
 	"log"
 	"net/http"
@@ -52,22 +54,23 @@ func (app *application) mount() http.Handler {
 		r.Get("/docs/*", httpSwagger.WrapHandler)
 
 		// ------------------Protected Routes----------
+		contactsService := contacts.NewService(repo.New(app.db))
+		contactsHandler := contacts.NewHandler(contactsService)
 
-		// profileHandler := auth.NewProfileHandler(profileService)
-		/*
-			r.Group(func(r chi.Router) {
-				r.Use(appMiddleware.Auth([]byte(conf.JWT_SECRET)))
-				// --------------ALL PROTECTED ROUTES BELOW HERE ----------------
+		r.Group(func(r chi.Router) {
+			r.Use(appMiddleware.Auth([]byte(conf.JWT_SECRET)))
+			// --------------ALL PROTECTED ROUTES BELOW HERE ----------------
 
-				// User DProfile Routes
-				r.Get("/profile", profileHandler.Profile)
-			})
-		*/
+			// POST contacts & upsert phone numbers/emails
+			r.Post("/contacts", contactsHandler.CreateContacts)
+		})
+
 	})
 	return r
 }
 
-// run - start server and do graceful shutdown
+// run - start server
+// Graceful shutdown - not done yet
 func (app *application) run(h http.Handler) error {
 	srv := &http.Server{
 		Addr:         app.config.addr,
