@@ -29,7 +29,9 @@ type Querier interface {
 	GetUserByEmailOrUsername(ctx context.Context, email string) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
 	// GET /contacts?limit=&offset=
-	ListContactsForUser(ctx context.Context, arg ListContactsForUserParams) ([]Contact, error)
+	ListContactsForUser(ctx context.Context, userID pgtype.UUID) ([]Contact, error)
+	// GET /contacts with details
+	ListContactsForUserWithDetails(ctx context.Context, userID pgtype.UUID) ([]ListContactsForUserWithDetailsRow, error)
 	ListEmailsForContact(ctx context.Context, contactID pgtype.UUID) ([]ContactEmail, error)
 	ListPhonesForContact(ctx context.Context, contactID pgtype.UUID) ([]ContactPhoneNumber, error)
 	MarkEmailVerificationTokenUsed(ctx context.Context, id pgtype.UUID) error

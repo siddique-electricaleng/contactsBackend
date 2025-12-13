@@ -371,18 +371,11 @@ FROM contacts
 WHERE user_id = $1
   AND deleted_at IS NULL
 ORDER BY display_name ASC
-LIMIT $2 OFFSET $3
 `
 
-type ListContactsForUserParams struct {
-	UserID pgtype.UUID `json:"user_id"`
-	Limit  int32       `json:"limit"`
-	Offset int32       `json:"offset"`
-}
-
 // GET /contacts?limit=&offset=
-func (q *Queries) ListContactsForUser(ctx context.Context, arg ListContactsForUserParams) ([]Contact, error) {
-	rows, err := q.db.Query(ctx, listContactsForUser, arg.UserID, arg.Limit, arg.Offset)
+func (q *Queries) ListContactsForUser(ctx context.Context, userID pgtype.UUID) ([]Contact, error) {
+	rows, err := q.db.Query(ctx, listContactsForUser, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -401,6 +394,86 @@ func (q *Queries) ListContactsForUser(ctx context.Context, arg ListContactsForUs
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listContactsForUserWithDetails = `-- name: ListContactsForUserWithDetails :many
+SELECT
+	c.id,
+	c.display_name,
+	c.first_name,
+	c.surname,
+	c.note,
+	c.source,
+	COALESCE(
+		json_agg(
+			distinct jsonb_build_object(
+			'label', p.label,
+			'number', p.number,
+			'isPrimary', p.is_primary
+			)
+		) filter (where p.id is not null)
+	, '[]'::json) as phone_numbers,
+	COALESCE(
+		json_agg(
+			distinct jsonb_build_object(
+			'label', e.label,
+			'email', e.email,
+			'isPrimary', e.is_primary
+			)
+		) filter (where e.id is not null)
+	, '[]'::json) as emails
+FROM contacts c
+LEFT JOIN contact_phone_numbers p 
+		ON p.contact_id = c.id 
+		AND p.user_id = c.user_id 
+LEFT JOIN contact_emails e 
+		ON e.contact_id = c.id
+		AND e.user_id = c.user_id 
+WHERE c.user_id = $1
+	and c.deleted_at is null
+group by c.id, c.display_name, c.first_name, c.surname, c.note, c.source
+order by c.first_name asc
+`
+
+type ListContactsForUserWithDetailsRow struct {
+	ID           pgtype.UUID `json:"id"`
+	DisplayName  string      `json:"display_name"`
+	FirstName    pgtype.Text `json:"first_name"`
+	Surname      pgtype.Text `json:"surname"`
+	Note         pgtype.Text `json:"note"`
+	Source       string      `json:"source"`
+	PhoneNumbers interface{} `json:"phone_numbers"`
+	Emails       interface{} `json:"emails"`
+}
+
+// GET /contacts with details
+func (q *Queries) ListContactsForUserWithDetails(ctx context.Context, userID pgtype.UUID) ([]ListContactsForUserWithDetailsRow, error) {
+	rows, err := q.db.Query(ctx, listContactsForUserWithDetails, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListContactsForUserWithDetailsRow
+	for rows.Next() {
+		var i ListContactsForUserWithDetailsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.DisplayName,
+			&i.FirstName,
+			&i.Surname,
+			&i.Note,
+			&i.Source,
+			&i.PhoneNumbers,
+			&i.Emails,
 		); err != nil {
 			return nil, err
 		}

@@ -14,12 +14,12 @@ type PhoneDTO struct {
 
 // EmailDTO matches contact_emails (emails+label).
 type EmailDTO struct {
-	UserID          string `json:"user_id"`          // contact_emails.user_id
-	ContactID       string `json:"contact_id"`       // contact_emails.contact_id
-	Label           string `json:"label"`            // contact_emails.label
-	Email           string `json:"email"`            // contact_emails.email
-	NormalizedEmail string `json:"normalized_email"` // contact_emails.normalized_email
-	IsPrimary       bool   `json:"is_primary"`       // contact_emails.is_primary
+	UserID          string `json:"user_id,omitempty"`          // contact_emails.user_id
+	ContactID       string `json:"contact_id,omitempty"`       // contact_emails.contact_id
+	Label           string `json:"label"`                      // contact_emails.label
+	Email           string `json:"email"`                      // contact_emails.email
+	NormalizedEmail string `json:"normalized_email,omitempty"` // contact_emails.normalized_email
+	IsPrimary       bool   `json:"is_primary"`                 // contact_emails.is_primary
 }
 
 // CreateContactRequest is what the frontend sends to POST /contacts

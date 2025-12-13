@@ -148,8 +148,47 @@ SELECT *
 FROM contacts
 WHERE user_id = $1
   AND deleted_at IS NULL
-ORDER BY display_name ASC
-LIMIT $2 OFFSET $3;
+ORDER BY display_name ASC;
+
+-- GET /contacts with details
+-- name: ListContactsForUserWithDetails :many
+SELECT
+	c.id,
+	c.display_name,
+	c.first_name,
+	c.surname,
+	c.note,
+	c.source,
+	COALESCE(
+		json_agg(
+			distinct jsonb_build_object(
+			'label', p.label,
+			'number', p.number,
+			'isPrimary', p.is_primary
+			)
+		) filter (where p.id is not null)
+	, '[]'::json) as phone_numbers,
+	COALESCE(
+		json_agg(
+			distinct jsonb_build_object(
+			'label', e.label,
+			'email', e.email,
+			'isPrimary', e.is_primary
+			)
+		) filter (where e.id is not null)
+	, '[]'::json) as emails
+FROM contacts c
+LEFT JOIN contact_phone_numbers p 
+		ON p.contact_id = c.id 
+		AND p.user_id = c.user_id 
+LEFT JOIN contact_emails e 
+		ON e.contact_id = c.id
+		AND e.user_id = c.user_id 
+WHERE c.user_id = $1
+	and c.deleted_at is null
+group by c.id, c.display_name, c.first_name, c.surname, c.note, c.source
+order by c.first_name asc
+;
 
 -- GET /contacts/{id}
 
