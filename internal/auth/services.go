@@ -194,6 +194,7 @@ func (s *svc) RefreshTokens(ctx context.Context, refreshToken string) (TokenPair
 		UserID:    dbToken.UserID,
 		TokenHash: newHash,
 		ExpiresAt: pgtype.Timestamptz{
+			// Time:  newExp,
 			Time:  newExp,
 			Valid: true,
 		},

@@ -63,6 +63,8 @@ func (app *application) mount() http.Handler {
 
 			// POST contacts & upsert phone numbers/emails
 			r.Post("/contacts", contactsHandler.CreateContacts)
+			// bulk sync or upload
+			r.Post("/contacts/sync", contactsHandler.BulkCreateContacts)
 
 			// GET all contacts for that user
 			r.Get("/contacts", contactsHandler.ListContactsForUserWithDetails)

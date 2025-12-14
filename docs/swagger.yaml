@@ -70,6 +70,214 @@ definitions:
       username:
         type: string
     type: object
+  contacts.BulkContactCreateData:
+    properties:
+      code:
+        example: 200
+        type: integer
+      contactInfo:
+        items:
+          $ref: '#/definitions/contacts.ContactIDWithDispName'
+        type: array
+      count:
+        example: 3
+        type: integer
+    type: object
+  contacts.BulkCreateContactRequestDocs:
+    properties:
+      contacts:
+        items:
+          $ref: '#/definitions/contacts.CreateContactRequestDocs'
+        type: array
+    type: object
+  contacts.ContactCreateData:
+    properties:
+      code:
+        example: 200
+        type: integer
+      contactInfo:
+        $ref: '#/definitions/contacts.ContactIDWithDispName'
+      count:
+        example: 1
+        type: integer
+    type: object
+  contacts.ContactIDWithDispName:
+    properties:
+      contactID:
+        example: c16dfb9c-6e26-48c6-acbd-44dd3a7827d1
+        type: string
+      displayName:
+        example: Abu Bakr Siddique
+        type: string
+    type: object
+  contacts.ContactResponse:
+    properties:
+      displayName:
+        example: Abu Bakr Siddique
+        type: string
+      emails:
+        items:
+          $ref: '#/definitions/contacts.EmailDTO'
+        type: array
+      firstName:
+        example: Abu Bakr
+        type: string
+      id:
+        description: contacts.id (uuid)
+        example: 95a6d5ac-5e28-43e9-aa30-81021e5f288e
+        type: string
+      note:
+        example: Programmer from FGL
+        type: string
+      phones:
+        items:
+          $ref: '#/definitions/contacts.PhoneDTO'
+        type: array
+      source:
+        example: DB_STORED
+        type: string
+      surname:
+        example: Siddique
+        type: string
+    type: object
+  contacts.ContactsData:
+    properties:
+      code:
+        example: 200
+        type: integer
+      contacts:
+        items:
+          $ref: '#/definitions/contacts.ContactResponse'
+        type: array
+    type: object
+  contacts.CreateBulkContactCountResponse:
+    properties:
+      data:
+        $ref: '#/definitions/contacts.BulkContactCreateData'
+      message:
+        example: 3 contacts created and stored
+        type: string
+    type: object
+  contacts.CreateContactCountResponse:
+    properties:
+      data:
+        $ref: '#/definitions/contacts.ContactCreateData'
+      message:
+        example: 1 contact created and stored
+        type: string
+    type: object
+  contacts.CreateContactRequestDocs:
+    properties:
+      display_name:
+        example: Abu Bakr Siddique
+        type: string
+      emails:
+        items:
+          $ref: '#/definitions/contacts.EmailCreateRequest'
+        type: array
+      first_name:
+        example: Abu Bakr
+        type: string
+      note:
+        example: Programmer from FGL
+        type: string
+      phones:
+        items:
+          $ref: '#/definitions/contacts.PhoneCreateRequest'
+        type: array
+      source:
+        example: DB_STORED
+        type: string
+      surname:
+        example: Siddique
+        type: string
+    type: object
+  contacts.EmailCreateRequest:
+    properties:
+      email:
+        example: abu.bakr@fiberathome.net
+        type: string
+      is_primary:
+        example: true
+        type: boolean
+      label:
+        example: work
+        type: string
+    type: object
+  contacts.EmailDTO:
+    properties:
+      contact_id:
+        description: contact_emails.contact_id
+        example: 95a6d5ac-5e28-43e9-aa30-81021e5f288e
+        type: string
+      email:
+        description: contact_emails.email
+        example: abu.bakr@fiberathome.net
+        type: string
+      is_primary:
+        description: contact_emails.is_primary
+        example: false
+        type: boolean
+      label:
+        description: contact_emails.label
+        example: work
+        type: string
+      normalized_email:
+        description: contact_emails.normalized_email
+        example: abu.bakr@fiberathome.net
+        type: string
+      user_id:
+        description: contact_emails.user_id
+        example: 0a0915ca-f33b-4140-b11b-c7a6cf9e2acf
+        type: string
+    type: object
+  contacts.ListContactsResponse:
+    properties:
+      data:
+        $ref: '#/definitions/contacts.ContactsData'
+      message:
+        example: contacts fetched successfully
+        type: string
+    type: object
+  contacts.PhoneCreateRequest:
+    properties:
+      is_primary:
+        example: true
+        type: boolean
+      label:
+        example: mobile
+        type: string
+      number:
+        example: "+8801681602515"
+        type: string
+    type: object
+  contacts.PhoneDTO:
+    properties:
+      contact_id:
+        description: contact_phone_numbers.contact_id
+        example: 95a6d5ac-5e28-43e9-aa30-81021e5f288e
+        type: string
+      is_primary:
+        description: contact_phone_numbers.is_primary
+        example: true
+        type: boolean
+      label:
+        description: contact_phone_numbers.label
+        example: mobile
+        type: string
+      normalized_number:
+        description: contact_phone_numbers.normalized_number
+        example: "8801681602515"
+        type: string
+      number:
+        description: contact_phone_numbers.number
+        example: "+8801681602515"
+        type: string
+      user_id:
+        description: contact_phone_numbers.user_id
+        example: 0a0915ca-f33b-4140-b11b-c7a6cf9e2acf
+        type: string
+    type: object
 info:
   contact: {}
   description: API Endpoint Documentation for Contacts Module
@@ -247,4 +455,112 @@ paths:
       summary: Email verification
       tags:
       - auth
+  /contacts:
+    get:
+      description: After verifying if user is authorized using bearer token, fetch/get
+        all the contacts stored for the specific user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/contacts.ListContactsResponse'
+        "401":
+          description: unauthorized
+          schema:
+            type: string
+        "500":
+          description: err.Error() messages
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get all the contacts stored in Pico for the specific user
+      tags:
+      - contacts
+    post:
+      consumes:
+      - application/json
+      description: After verifying if user is authorized using bearer token, a contact
+        can be created or existing contact can be updated and stored in Pico Database
+        through this API, additionally a single contact can have multiple phone numbers
+        and emails
+      parameters:
+      - description: Contact payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/contacts.CreateContactRequestDocs'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/contacts.CreateContactCountResponse'
+        "400":
+          description: invalid body
+          schema:
+            type: string
+        "401":
+          description: unauthorized
+          schema:
+            type: string
+        "409":
+          description: email or username already exists
+          schema:
+            type: string
+        "500":
+          description: err.Error() messages
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Create/Update - Upsert a Contact with required phone and email fields
+      tags:
+      - contacts
+  /contacts/sync:
+    post:
+      consumes:
+      - application/json
+      description: Create multiple contacts for the authenticated user in a single
+        request.
+      parameters:
+      - description: Bulk contact payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/contacts.BulkCreateContactRequestDocs'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/contacts.CreateBulkContactCountResponse'
+        "400":
+          description: invalid body
+          schema:
+            type: string
+        "401":
+          description: unauthorized
+          schema:
+            type: string
+        "500":
+          description: err.Error() messages
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Bulk create contacts
+      tags:
+      - contacts
+securityDefinitions:
+  Bearer:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

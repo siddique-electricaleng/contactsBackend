@@ -263,6 +263,161 @@
                     }
                 }
             }
+        },
+        "/contacts": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "After verifying if user is authorized using bearer token, fetch/get all the contacts stored for the specific user.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "contacts"
+                ],
+                "summary": "Get all the contacts stored in Pico for the specific user",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/contacts.ListContactsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "err.Error() messages",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "After verifying if user is authorized using bearer token, a contact can be created or existing contact can be updated and stored in Pico Database through this API, additionally a single contact can have multiple phone numbers and emails",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "contacts"
+                ],
+                "summary": "Create/Update - Upsert a Contact with required phone and email fields",
+                "parameters": [
+                    {
+                        "description": "Contact payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/contacts.CreateContactRequestDocs"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/contacts.CreateContactCountResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid body",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "409": {
+                        "description": "email or username already exists",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "err.Error() messages",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/contacts/sync": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create multiple contacts for the authenticated user in a single request.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "contacts"
+                ],
+                "summary": "Bulk create contacts",
+                "parameters": [
+                    {
+                        "description": "Bulk contact payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/contacts.BulkCreateContactRequestDocs"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/contacts.CreateBulkContactCountResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid body",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "err.Error() messages",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -376,6 +531,306 @@
                     "type": "string"
                 }
             }
+        },
+        "contacts.BulkContactCreateData": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 200
+                },
+                "contactInfo": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contacts.ContactIDWithDispName"
+                    }
+                },
+                "count": {
+                    "type": "integer",
+                    "example": 3
+                }
+            }
+        },
+        "contacts.BulkCreateContactRequestDocs": {
+            "type": "object",
+            "properties": {
+                "contacts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contacts.CreateContactRequestDocs"
+                    }
+                }
+            }
+        },
+        "contacts.ContactCreateData": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 200
+                },
+                "contactInfo": {
+                    "$ref": "#/definitions/contacts.ContactIDWithDispName"
+                },
+                "count": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "contacts.ContactIDWithDispName": {
+            "type": "object",
+            "properties": {
+                "contactID": {
+                    "type": "string",
+                    "example": "c16dfb9c-6e26-48c6-acbd-44dd3a7827d1"
+                },
+                "displayName": {
+                    "type": "string",
+                    "example": "Abu Bakr Siddique"
+                }
+            }
+        },
+        "contacts.ContactResponse": {
+            "type": "object",
+            "properties": {
+                "displayName": {
+                    "type": "string",
+                    "example": "Abu Bakr Siddique"
+                },
+                "emails": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contacts.EmailDTO"
+                    }
+                },
+                "firstName": {
+                    "type": "string",
+                    "example": "Abu Bakr"
+                },
+                "id": {
+                    "description": "contacts.id (uuid)",
+                    "type": "string",
+                    "example": "95a6d5ac-5e28-43e9-aa30-81021e5f288e"
+                },
+                "note": {
+                    "type": "string",
+                    "example": "Programmer from FGL"
+                },
+                "phones": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contacts.PhoneDTO"
+                    }
+                },
+                "source": {
+                    "type": "string",
+                    "example": "DB_STORED"
+                },
+                "surname": {
+                    "type": "string",
+                    "example": "Siddique"
+                }
+            }
+        },
+        "contacts.ContactsData": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 200
+                },
+                "contacts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contacts.ContactResponse"
+                    }
+                }
+            }
+        },
+        "contacts.CreateBulkContactCountResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/contacts.BulkContactCreateData"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "3 contacts created and stored"
+                }
+            }
+        },
+        "contacts.CreateContactCountResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/contacts.ContactCreateData"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "1 contact created and stored"
+                }
+            }
+        },
+        "contacts.CreateContactRequestDocs": {
+            "type": "object",
+            "properties": {
+                "display_name": {
+                    "type": "string",
+                    "example": "Abu Bakr Siddique"
+                },
+                "emails": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contacts.EmailCreateRequest"
+                    }
+                },
+                "first_name": {
+                    "type": "string",
+                    "example": "Abu Bakr"
+                },
+                "note": {
+                    "type": "string",
+                    "example": "Programmer from FGL"
+                },
+                "phones": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/contacts.PhoneCreateRequest"
+                    }
+                },
+                "source": {
+                    "type": "string",
+                    "example": "DB_STORED"
+                },
+                "surname": {
+                    "type": "string",
+                    "example": "Siddique"
+                }
+            }
+        },
+        "contacts.EmailCreateRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "abu.bakr@fiberathome.net"
+                },
+                "is_primary": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "label": {
+                    "type": "string",
+                    "example": "work"
+                }
+            }
+        },
+        "contacts.EmailDTO": {
+            "type": "object",
+            "properties": {
+                "contact_id": {
+                    "description": "contact_emails.contact_id",
+                    "type": "string",
+                    "example": "95a6d5ac-5e28-43e9-aa30-81021e5f288e"
+                },
+                "email": {
+                    "description": "contact_emails.email",
+                    "type": "string",
+                    "example": "abu.bakr@fiberathome.net"
+                },
+                "is_primary": {
+                    "description": "contact_emails.is_primary",
+                    "type": "boolean",
+                    "example": false
+                },
+                "label": {
+                    "description": "contact_emails.label",
+                    "type": "string",
+                    "example": "work"
+                },
+                "normalized_email": {
+                    "description": "contact_emails.normalized_email",
+                    "type": "string",
+                    "example": "abu.bakr@fiberathome.net"
+                },
+                "user_id": {
+                    "description": "contact_emails.user_id",
+                    "type": "string",
+                    "example": "0a0915ca-f33b-4140-b11b-c7a6cf9e2acf"
+                }
+            }
+        },
+        "contacts.ListContactsResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/contacts.ContactsData"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "contacts fetched successfully"
+                }
+            }
+        },
+        "contacts.PhoneCreateRequest": {
+            "type": "object",
+            "properties": {
+                "is_primary": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "label": {
+                    "type": "string",
+                    "example": "mobile"
+                },
+                "number": {
+                    "type": "string",
+                    "example": "+8801681602515"
+                }
+            }
+        },
+        "contacts.PhoneDTO": {
+            "type": "object",
+            "properties": {
+                "contact_id": {
+                    "description": "contact_phone_numbers.contact_id",
+                    "type": "string",
+                    "example": "95a6d5ac-5e28-43e9-aa30-81021e5f288e"
+                },
+                "is_primary": {
+                    "description": "contact_phone_numbers.is_primary",
+                    "type": "boolean",
+                    "example": true
+                },
+                "label": {
+                    "description": "contact_phone_numbers.label",
+                    "type": "string",
+                    "example": "mobile"
+                },
+                "normalized_number": {
+                    "description": "contact_phone_numbers.normalized_number",
+                    "type": "string",
+                    "example": "8801681602515"
+                },
+                "number": {
+                    "description": "contact_phone_numbers.number",
+                    "type": "string",
+                    "example": "+8801681602515"
+                },
+                "user_id": {
+                    "description": "contact_phone_numbers.user_id",
+                    "type": "string",
+                    "example": "0a0915ca-f33b-4140-b11b-c7a6cf9e2acf"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }

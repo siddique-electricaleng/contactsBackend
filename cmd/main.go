@@ -1,6 +1,10 @@
 // @title Contacts Backend API
 // @description API Endpoint Documentation for Contacts Module
 
+// @securityDefinitions.apikey Bearer
+// @in header
+// @name Authorization
+
 package main
 
 import (
@@ -26,19 +30,18 @@ func main() {
 	docs.SwaggerInfo.BasePath = baseURLPath    // swagger API Base Path
 
 	cfg := config{
-		addr: env.GetString("PORT", ":8080"),
+		addr: env.GetStringNoFallback("PORT"),
 		db: dbConfig{
-			host:     env.GetString("DB_HOST", "localhost"),
-			port:     env.GetString("DB_PORT", "5432"),
-			user:     env.GetString("DB_USER", "postgres"),
-			password: env.GetString("DB_PASSWORD", ""),
-			name:     env.GetString("DB_NAME", "products"),
-			sslmode:  env.GetString("DB_SSLMODE", "disable"),
+			host:     env.GetStringNoFallback("DB_HOST"),
+			port:     env.GetStringNoFallback("DB_PORT"),
+			user:     env.GetStringNoFallback("DB_USER"),
+			password: env.GetStringNoFallback("DB_PASSWORD"),
+			name:     env.GetStringNoFallback("DB_NAME"),
+			sslmode:  env.GetStringNoFallback("DB_SSLMODE"),
 		},
 	}
 
 	dsn := cfg.db.DSN()
-
 	// structured logging
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	slog.SetDefault(logger)

@@ -12,7 +12,10 @@ import (
 )
 
 type Service interface {
-	CreateContacts(ctx context.Context, userID uuid.UUID, req CreateContactRequest) (ContactResponse, error)
+	// CreateContacts(ctx context.Context, userID uuid.UUID, req CreateContactRequest) (ContactResponse, error)
+	CreateContacts(ctx context.Context, userID uuid.UUID, req CreateContactRequest) (int, ContactIDWithDispName, error)
+	// BulkCreateContacts(ctx context.Context, userID uuid.UUID, reqs []CreateContactRequest) ([]ContactResponse, error)
+	BulkCreateContacts(ctx context.Context, userID uuid.UUID, reqs []CreateContactRequest) (int, []ContactIDWithDispName, error)
 	ListContactsForUserWithDetails(ctx context.Context, userID uuid.UUID) ([]ContactResponse, error)
 }
 
@@ -75,7 +78,126 @@ func decodeJSONField(raw any, out any) error {
 
 // Methods for contact business layer
 
+/*
 func (s *svc) CreateContacts(ctx context.Context, userID uuid.UUID, req CreateContactRequest) (ContactResponse, error) {
+
+		// 1. Join first_name and surname to form display_name
+
+		displayName := joinName(req.FirstName, req.Surname)
+
+		// 2a. Insert data into the contacts table
+		insertContact, err := s.query.CreateContact(ctx, repo.CreateContactParams{
+			UserID: pgtype.UUID{
+				Bytes: userID,
+				Valid: true,
+			},
+			DisplayName: displayName,
+			FirstName: pgtype.Text{
+				String: req.FirstName,
+				Valid:  true,
+			},
+			Surname: pgtype.Text{
+				String: req.Surname,
+				Valid:  true,
+			},
+			Note: pgtype.Text{
+				String: req.Note,
+				Valid:  true,
+			},
+			Source: req.Source,
+		})
+
+		// 2b. check for errors upon data insertion into contacts table
+		if err != nil {
+			return ContactResponse{}, fmt.Errorf("error Inserting/Updating contact information")
+		}
+
+		// 3. Upsert Phones
+		phoneDTOs := []PhoneDTO{}
+
+		for _, phone := range req.Phones {
+			normalized := normalizePhone(phone.Number)
+
+			insertContactNumber, err := s.query.UpsertContactPhone(ctx, repo.UpsertContactPhoneParams{
+				UserID: pgtype.UUID{
+					Bytes: userID,
+					Valid: true,
+				},
+				ContactID: insertContact.ID,
+				Number:    phone.Number,
+				Label: pgtype.Text{
+					String: phone.Label,
+					Valid:  true,
+				},
+				NormalizedNumber: normalized,
+				IsPrimary:        phone.IsPrimary,
+			})
+
+			if err != nil {
+				return ContactResponse{}, fmt.Errorf("error Inserting/Updating number")
+			}
+
+			phoneDTOs = append(phoneDTOs, PhoneDTO{
+				UserID:           insertContact.UserID.String(),
+				ContactID:        insertContact.ID.String(),
+				Label:            insertContactNumber.Label.String,
+				Number:           insertContactNumber.Number,
+				NormalizedNumber: insertContactNumber.NormalizedNumber,
+				IsPrimary:        insertContactNumber.IsPrimary,
+			})
+		}
+
+		// 4. Upsert Email
+		emailDTOs := []EmailDTO{}
+
+		for _, email := range req.Emails {
+			normalized := normalizeEmail(email.Email)
+
+			insertContactEmail, err := s.query.UpsertContactEmail(ctx, repo.UpsertContactEmailParams{
+				UserID: pgtype.UUID{
+					Bytes: userID,
+					Valid: true,
+				},
+				ContactID: insertContact.ID,
+				Email:     email.Email,
+				Label: pgtype.Text{
+					String: email.Label,
+					Valid:  true,
+				},
+				NormalizedEmail: normalized,
+				IsPrimary:       email.IsPrimary,
+			})
+
+			if err != nil {
+				return ContactResponse{}, fmt.Errorf("error Inserting/Updating email")
+			}
+
+			emailDTOs = append(emailDTOs, EmailDTO{
+				UserID:          insertContact.UserID.String(),
+				ContactID:       insertContact.ID.String(),
+				Label:           insertContactEmail.Label.String,
+				Email:           insertContactEmail.Email,
+				NormalizedEmail: insertContactEmail.NormalizedEmail,
+				IsPrimary:       insertContactEmail.IsPrimary,
+			})
+		}
+
+		// 5. Build ContactResponseDTO
+		resp := ContactResponse{
+			ID:          insertContact.ID.String(),
+			DisplayName: insertContact.DisplayName,
+			FirstName:   insertContact.FirstName.String,
+			Surname:     insertContact.Surname.String,
+			Note:        insertContact.Note.String,
+			Source:      insertContact.Source,
+			Phones:      phoneDTOs,
+			Emails:      emailDTOs,
+		}
+
+		return resp, nil
+	}
+*/
+func (s *svc) CreateContacts(ctx context.Context, userID uuid.UUID, req CreateContactRequest) (int, ContactIDWithDispName, error) {
 
 	// 1. Join first_name and surname to form display_name
 
@@ -105,7 +227,7 @@ func (s *svc) CreateContacts(ctx context.Context, userID uuid.UUID, req CreateCo
 
 	// 2b. check for errors upon data insertion into contacts table
 	if err != nil {
-		return ContactResponse{}, fmt.Errorf("error Inserting/Updating contact information")
+		return 0, ContactIDWithDispName{}, fmt.Errorf("error Inserting/Updating contact information")
 	}
 
 	// 3. Upsert Phones
@@ -130,7 +252,7 @@ func (s *svc) CreateContacts(ctx context.Context, userID uuid.UUID, req CreateCo
 		})
 
 		if err != nil {
-			return ContactResponse{}, fmt.Errorf("error Inserting/Updating number")
+			return 0, ContactIDWithDispName{}, fmt.Errorf("error Inserting/Updating number")
 		}
 
 		phoneDTOs = append(phoneDTOs, PhoneDTO{
@@ -165,7 +287,7 @@ func (s *svc) CreateContacts(ctx context.Context, userID uuid.UUID, req CreateCo
 		})
 
 		if err != nil {
-			return ContactResponse{}, fmt.Errorf("error Inserting/Updating email")
+			return 0, ContactIDWithDispName{}, fmt.Errorf("error Inserting/Updating email")
 		}
 
 		emailDTOs = append(emailDTOs, EmailDTO{
@@ -178,19 +300,44 @@ func (s *svc) CreateContacts(ctx context.Context, userID uuid.UUID, req CreateCo
 		})
 	}
 
-	// 5. Build ContactResponseDTO
-	resp := ContactResponse{
-		ID:          insertContact.ID.String(),
-		DisplayName: insertContact.DisplayName,
-		FirstName:   insertContact.FirstName.String,
-		Surname:     insertContact.Surname.String,
-		Note:        insertContact.Note.String,
-		Source:      insertContact.Source,
-		Phones:      phoneDTOs,
-		Emails:      emailDTOs,
+	return 1, ContactIDWithDispName{ContactID: insertContact.ID.String(), DisplayName: insertContact.DisplayName}, nil
+}
+
+/*
+
+func (s *svc) BulkCreateContacts(ctx context.Context, userID uuid.UUID, reqs []CreateContactRequest) ([]ContactResponse, error) {
+
+	contacts := make([]ContactResponse, 0, len(reqs))
+
+	for _, r := range reqs {
+		contact, err := s.CreateContacts(ctx, userID, r)
+		if err != nil {
+			return nil, err
+		}
+		contacts = append(contacts, contact)
 	}
 
-	return resp, nil
+	return contacts, nil
+}
+*/
+
+func (s *svc) BulkCreateContacts(ctx context.Context, userID uuid.UUID, reqs []CreateContactRequest) (int, []ContactIDWithDispName, error) {
+
+	total := 0
+
+	infos := make([]ContactIDWithDispName, 0, len(reqs))
+
+	for _, r := range reqs {
+		n, info, err := s.CreateContacts(ctx, userID, r)
+		if err != nil {
+			// returns partial progres with the errors
+			return total, infos, err
+		}
+		total += n
+		infos = append(infos, info)
+	}
+
+	return total, infos, nil
 }
 
 func (s *svc) ListContactsForUserWithDetails(ctx context.Context, userID uuid.UUID) ([]ContactResponse, error) {
