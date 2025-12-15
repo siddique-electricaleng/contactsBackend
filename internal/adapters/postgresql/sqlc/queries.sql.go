@@ -614,8 +614,13 @@ INSERT INTO contact_emails(
   is_primary
 )
 VALUES( $1, $2, $3, $4, $5, $6
-) ON CONFLICT (contact_id, normalized_email) DO UPDATE
-SET label = EXCLUDED.label
+) ON CONFLICT (user_id, normalized_email) DO UPDATE
+SET 
+  contact_id = EXCLUDED.contact_id,
+  email = EXCLUDED.email,
+  label = EXCLUDED.label,
+  is_primary = EXCLUDED.is_primary,
+  updated_at = now()
 RETURNING id, user_id, contact_id, label, email, normalized_email, is_primary, created_at, updated_at
 `
 
@@ -663,8 +668,13 @@ INSERT INTO contact_phone_numbers(
 )
 VALUES( $1, $2, $3, $4, $5, $6
 )
-ON CONFLICT (contact_id, normalized_number) DO UPDATE
-SET label = EXCLUDED.label
+ON CONFLICT (user_id, normalized_number) DO UPDATE
+SET
+  contact_id = EXCLUDED.contact_id,
+  number = EXCLUDED.number,
+  label = EXCLUDED.label,
+  is_primary = EXCLUDED.is_primary,
+  updated_at = now()
 RETURNING id, user_id, contact_id, label, number, normalized_number, is_primary, created_at, updated_at
 `
 
