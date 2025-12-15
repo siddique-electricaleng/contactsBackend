@@ -6,13 +6,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+)
+
+var (
+	ErrConflict     = fmt.Errorf("conflict")
+	ErrInvalidInput = fmt.Errorf("invalid input")
 )
 
 type Service interface {
@@ -80,6 +84,36 @@ func decodeJSONField(raw any, out any) error {
 	return json.Unmarshal(b, out)
 }
 
+func toPublicErr(err error, context string) error {
+	var pgErr *pgconn.PgError
+	if !errors.As(err, &pgErr) {
+		return err
+	}
+
+	// UNIQUE violation
+	if pgErr.Code == "23505" {
+		switch pgErr.ConstraintName {
+		case "contact_phone_numbers_user_norm_uniq":
+			// Handler sees ErrConflict → returns same response format as before
+			return fmt.Errorf("%w: duplicate phone (%s)", ErrConflict, context)
+		case "contact_emails_user_norm_uniq":
+			return fmt.Errorf("%w: duplicate email (%s)", ErrConflict, context)
+		case "contacts_no_exact_dupe_active":
+			return fmt.Errorf("%w: duplicate contact (%s)", ErrConflict, context)
+		default:
+			return fmt.Errorf("%w: duplicate (%s)", ErrConflict, context)
+		}
+	}
+
+	// NOT NULL / FK violations → treat as bad request (optional)
+	if pgErr.Code == "23502" || pgErr.Code == "23503" {
+		return fmt.Errorf("%w: %s", ErrInvalidInput, context)
+	}
+
+	// fallback
+	return err
+}
+
 // Methods for contact business layer
 
 func (s *svc) CreateContacts(ctx context.Context, userID uuid.UUID, req CreateContactRequest) (int, ContactIDWithDispName, error) {
@@ -113,20 +147,7 @@ func (s *svc) CreateContacts(ctx context.Context, userID uuid.UUID, req CreateCo
 	// 2b. check for errors upon data insertion into contacts table
 	if err != nil {
 
-		log.Printf("contact insert err: %v", err)
-
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) {
-			log.Printf(
-				"PG ERROR [contacts] code=%s constraint=%s detail=%s column=%s",
-				pgErr.Code,
-				pgErr.ConstraintName,
-				pgErr.Detail,
-				pgErr.ColumnName,
-			)
-		}
-
-		return 0, ContactIDWithDispName{}, fmt.Errorf("error Inserting/Updating contact information")
+		return 0, ContactIDWithDispName{}, toPublicErr(err, "creating contact")
 	}
 
 	// 3. Upsert Phones
@@ -152,20 +173,9 @@ func (s *svc) CreateContacts(ctx context.Context, userID uuid.UUID, req CreateCo
 
 		if err != nil {
 
-			log.Printf("phone insert err: %v", err)
-
-			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) {
-				log.Printf(
-					"PG ERROR [phone] code=%s constraint=%s detail=%s column=%s",
-					pgErr.Code,
-					pgErr.ConstraintName,
-					pgErr.Detail,
-					pgErr.ColumnName,
-				)
-			}
-
-			return 0, ContactIDWithDispName{}, fmt.Errorf("error Inserting/Updating number")
+			return 0, ContactIDWithDispName{}, toPublicErr(err,
+				fmt.Sprintf("phone=%s contact_id=%s", phone.Number, insertContact.ID.String()),
+			)
 		}
 
 		phoneDTOs = append(phoneDTOs, PhoneDTO{
@@ -201,20 +211,9 @@ func (s *svc) CreateContacts(ctx context.Context, userID uuid.UUID, req CreateCo
 
 		if err != nil {
 
-			log.Printf("email insert err: %v", err)
-
-			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) {
-				log.Printf(
-					"PG ERROR [email] code=%s constraint=%s detail=%s column=%s",
-					pgErr.Code,
-					pgErr.ConstraintName,
-					pgErr.Detail,
-					pgErr.ColumnName,
-				)
-			}
-
-			return 0, ContactIDWithDispName{}, fmt.Errorf("error Inserting/Updating email")
+			return 0, ContactIDWithDispName{}, toPublicErr(err,
+				fmt.Sprintf("email=%s contact_id=%s", email.Email, insertContact.ID.String()),
+			)
 		}
 
 		emailDTOs = append(emailDTOs, EmailDTO{
@@ -229,24 +228,6 @@ func (s *svc) CreateContacts(ctx context.Context, userID uuid.UUID, req CreateCo
 
 	return 1, ContactIDWithDispName{ContactID: insertContact.ID.String(), DisplayName: insertContact.DisplayName}, nil
 }
-
-/*
-
-func (s *svc) BulkCreateContacts(ctx context.Context, userID uuid.UUID, reqs []CreateContactRequest) ([]ContactResponse, error) {
-
-	contacts := make([]ContactResponse, 0, len(reqs))
-
-	for _, r := range reqs {
-		contact, err := s.CreateContacts(ctx, userID, r)
-		if err != nil {
-			return nil, err
-		}
-		contacts = append(contacts, contact)
-	}
-
-	return contacts, nil
-}
-*/
 
 func (s *svc) BulkCreateContacts(ctx context.Context, userID uuid.UUID, reqs []CreateContactRequest) (int, []ContactIDWithDispName, error) {
 
